@@ -1,3 +1,30 @@
 from django.db import models
+from django.contrib.auth.base_user import BaseUserManager
+from django.contrib.auth.models import AbstractUser
+from core.models import BaseModel
 
-# Create your models here.
+
+class CustomUserManager(BaseUserManager):
+
+    def create_user(self,email,password,**kwargs):
+        user = self.model(email=email, **kwargs)
+        user.set_password(password)
+        user.save()
+        return user
+
+    def create_superuser(self, email, password, **kwargs):
+        kwargs.setdefault("is_staff", True) 
+        kwargs.setdefault("is_superuser", True)
+        kwargs.setdefault("is_active", True)
+
+        return self.create_user(email, password, **kwargs)
+
+class CustomUser(AbstractUser, BaseModel):
+    username = None
+    email = models.EmailField(unique=True)
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
+    def __str__(self):
+        return self.email
+
