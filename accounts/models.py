@@ -32,3 +32,19 @@ class CustomUser(AbstractUser, BaseModel):
     def __str__(self):
         return self.email
 
+
+class Address(BaseModel):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='address_user')
+    label = models.CharField(max_length=100)
+    address_line_1 = models.CharField(max_length=255)
+    address_line_2 = models.CharField(max_length=255, blank=True, null=True)
+    city = models.CharField(max_length=20)
+    state = models.CharField(max_length=20)
+    country = models.CharField(max_length=20)
+    postal_code = models.CharField(max_length=20)
+
+    def __str__(self):
+        return f'{self.label} - {self.city}'
+
+        
+    

@@ -25,13 +25,13 @@ class Category(BaseModel):
 
 class ProductImage(BaseModel):
     image = models.ImageField(upload_to='products/')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='             image_product')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='image_product')
 
 
 class Comment(BaseModel):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='comment_user')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='comment_product')
-    text = models.TextField()
+    description = models.TextField()
     is_approved = models.BooleanField(default=False)
 
     def __str__(self):
