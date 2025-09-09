@@ -22,8 +22,8 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractUser, BaseModel):
     username = None
     email = models.EmailField(unique=True)
-    is_seller = models.BooleanField(default=False)
     picture = models.ImageField(upload_to='users/', null=True, blank=True)
+    is_seller = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -46,5 +46,5 @@ class Address(BaseModel):
     def __str__(self):
         return f'{self.label} - {self.city}'
 
-        
+
     
