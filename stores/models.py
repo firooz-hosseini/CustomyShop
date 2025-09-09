@@ -9,6 +9,9 @@ class Store(BaseModel):
     address = models.ForeignKey(Address, on_delete=models.CASCADE, related_name='store_address')
     seller = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='store_seller')
 
+    def __str__(self):
+        return self.name
+    
 
 class StoreItem(BaseModel):
     stock = models.PositiveIntegerField(default=0)
@@ -17,7 +20,9 @@ class StoreItem(BaseModel):
     is_active = models.BooleanField(default=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='item_product')
     Store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='item_store')
-    
+
+    def __str__(self):
+        return f"{self.product.name} ({self.store.name})"
 
 
 
