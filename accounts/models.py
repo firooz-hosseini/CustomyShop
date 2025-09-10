@@ -22,6 +22,7 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractUser, BaseModel):
     username = None
     email = models.EmailField(unique=True)
+    phone = models.CharField(max_length=15, blank=True, null=True)
     image = models.ImageField(upload_to='user/', null=True, blank=True)
     is_seller = models.BooleanField(default=False)
 
@@ -34,7 +35,8 @@ class CustomUser(AbstractUser, BaseModel):
 
 
 class Address(BaseModel):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='address_user')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='address_user', blank=True, null=True)
+    store = models.ForeignKey('stores.Store', on_delete=models.CASCADE, related_name='address_store', blank=True, null=True)
     label = models.CharField(max_length=100)
     address_line_1 = models.CharField(max_length=255)
     address_line_2 = models.CharField(max_length=255, blank=True, null=True)
