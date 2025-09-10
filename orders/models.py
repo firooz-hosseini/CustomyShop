@@ -18,7 +18,6 @@ class CartItem(BaseModel):
     store_item = models.ForeignKey(StoreItem, on_delete=models.CASCADE, related_name='item_store_item')
     quantity = models.PositiveIntegerField()
 
-
     def __str__(self):
         return f'{self.store_item.product.name} x {self.quantity}'
 
@@ -33,3 +32,18 @@ class Order(BaseModel):
 
     def __str__(self):
         return f'Order #{self.id} - {self.customer.email}'
+
+
+class OrderItem(BaseModel):
+    quantity = models.PositiveIntegerField(default=0)
+    price = models.DecimalField(max_digits=12, decimal_places=2)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='item_order')
+    store_item = models.ForeignKey(StoreItem, on_delete=models.CASCADE, related_name='item_store_item')
+
+    @property
+    def total_price(self):
+        return self.price * self.quantity
+
+    def __str__(self):
+        return f'{self.order.id} - {self.store_item.product.name}'
+
