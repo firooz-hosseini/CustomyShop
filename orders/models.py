@@ -1,3 +1,62 @@
 from django.db import models
+from core.models import BaseModel
+from accounts.models import CustomUser, Address
+from stores.models import StoreItem
 
-# Create your models here.
+
+class Cart(BaseModel):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='cart_user')
+    total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f'Cart of {self.user.email}'
+
+    
+class CartItem(BaseModel):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cartitem_cart')
+    store_item = models.ForeignKey(StoreItem, on_delete=models.CASCADE, related_name='cartitem_storeitem')
+    quantity = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f'{self.store_item.product.name} x {self.quantity}'
+
+
+class Order(BaseModel):
+    ORDER_STATUS = [(1,'Pending'),(2,'Processing'),(3,'Delivered'),(4,'Cancelled'),(5,'Failed')]
+    address = models.ForeignKey(Address, on_delete=models.CASCADE, related_name='order_customer')
+    customer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='order_address')
+    status = models.PositiveIntegerField(choices=ORDER_STATUS, default=1)
+    total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f'Order #{self.id} - {self.customer.email}'
+
+
+class OrderItem(BaseModel):
+    quantity = models.PositiveIntegerField(default=0)
+    price = models.DecimalField(max_digits=12, decimal_places=2)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='orderitem_order')
+    store_item = models.ForeignKey(StoreItem, on_delete=models.CASCADE, related_name='orderitem_storeitem')
+
+    @property
+    def total_price(self):
+        return self.price * self.quantity
+
+    def __str__(self):
+        return f'{self.order.id} - {self.store_item.product.name}'
+
+
+class Payment(BaseModel):
+    PAYMENT_STATUS = [(1,'Pending'), (2,'Success'), (3,'Failed')]
+    status = models.CharField(choices=PAYMENT_STATUS, default=1)
+    transaction_id = models.CharField(max_length=20, blank=True, null=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    fee = models.DecimalField(max_digits=12, decimal_places=2)
+    reference_id = models.CharField(max_length=20, blank=True, null=True)
+    card_pan = models.CharField(max_length=20, blank=True, null=True)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='payment_order')
+
+    def __str__(self):
+        return f'Payment for order #{self.order.id} - {self.get_status_display()}'
