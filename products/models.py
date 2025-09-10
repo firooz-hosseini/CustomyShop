@@ -2,12 +2,12 @@ from django.db import models
 from core.models import BaseModel
 from accounts.models import CustomUser
 
+
 class Product(BaseModel):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     category = models.ForeignKey('Category', on_delete=models.CASCADE, related_name='product_category')
     is_active = models.BooleanField(default=True)
-
 
     def __str__(self):
         return self.name
@@ -16,6 +16,7 @@ class Product(BaseModel):
 class Category(BaseModel):
     name = models.CharField(max_length=100)
     description = models.TextField()
+    image = models.ImageField(upload_to='category/')
     is_active = models.BooleanField(default=True)
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')
 
@@ -24,7 +25,7 @@ class Category(BaseModel):
     
 
 class ProductImage(BaseModel):
-    image = models.ImageField(upload_to='products/')
+    image = models.ImageField(upload_to='product/')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='image_product')
 
 
@@ -44,7 +45,6 @@ class Rating(BaseModel):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='rating_user')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='rating_product')
     rating = models.PositiveIntegerField(choices=scores)
-
 
     class Meta:
         unique_together = ('user', 'product')

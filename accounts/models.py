@@ -22,7 +22,7 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractUser, BaseModel):
     username = None
     email = models.EmailField(unique=True)
-    picture = models.ImageField(upload_to='users/', null=True, blank=True)
+    image = models.ImageField(upload_to='user/', null=True, blank=True)
     is_seller = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'

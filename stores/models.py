@@ -18,8 +18,8 @@ class StoreItem(BaseModel):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     discount_price = models.DecimalField(max_digits=10, decimal_places=2)
     is_active = models.BooleanField(default=True)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='item_product')
-    Store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='item_store')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='storeitem_product')
+    Store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='storeitem_store')
 
     def __str__(self):
         return f"{self.product.name} ({self.store.name})"
