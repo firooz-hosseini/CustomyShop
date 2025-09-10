@@ -47,3 +47,16 @@ class OrderItem(BaseModel):
     def __str__(self):
         return f'{self.order.id} - {self.store_item.product.name}'
 
+
+class Payment(BaseModel):
+    PAYMENT_STATUS = [(1,'Pending'), (2,'Success'), (3,'Failed')]
+    status = models.CharField(choices=PAYMENT_STATUS, default=1)
+    transaction_id = models.CharField(max_length=20, blank=True, null=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    fee = models.DecimalField(max_digits=12, decimal_places=2)
+    reference_id = models.CharField(max_length=20, blank=True, null=True)
+    card_pan = models.CharField(max_length=20, blank=True, null=True)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='payment_order')
+
+    def __str__(self):
+        return f'Payment for order #{self.order.id} - {self.get_status_display()}'
