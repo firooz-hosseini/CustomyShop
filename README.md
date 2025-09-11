@@ -39,7 +39,13 @@ pip install -r requirements.txt
 ### 3- Environment Variables
 Create a `.env` file in the root directory and set the required values:
 
-will be added later ...
+SECRET_KEY=your_secret_key_here
+DEBUG=True
+ALLOWED_HOSTS=127.0.0.1,localhost
+
+DB_ENGINE=your_db_engine
+DB_NAME=your_db_name
+
 
 
 ### 4- Apply Database Migrations
