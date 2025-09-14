@@ -4,7 +4,8 @@ from . import views
 
 
 router = DefaultRouter()
-router.register('request-otp', views.RequestOtpView, basename='request_otp')
+router.register('request-otp', views.RequestOtpApiView, basename='request_otp')
+router.register('verify-otp', views.VerifyOtpApiView, basename='verify_otp')
 
 
 
