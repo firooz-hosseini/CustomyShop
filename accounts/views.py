@@ -1,12 +1,12 @@
 from rest_framework import viewsets, status
 from .models import CustomUser
-from .serializers import RequestOtpSerializer, VerifyOtpSerializer
+from .serializers import RequestOtpSerializer, VerifyOtpSerializer, LoginSerializer
 from random import randint
 from django.core.cache import cache
 from django.core.mail import send_mail
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
-
+from django.contrib.auth import authenticate
 
 class RequestOtpApiView(viewsets.GenericViewSet):
     queryset = CustomUser.objects.all()
@@ -88,3 +88,25 @@ class VerifyOtpApiView(viewsets.GenericViewSet):
 
 
 
+class LoginApiView(viewsets.GenericViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = LoginSerializer
+
+    def create(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data.get('email')
+            password = serializer.validated_data.get('password')
+
+            user = authenticate(request, email=email, password=password)
+
+            if user is not None:
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    'message': 'Login successful',
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token)
+                }, status=status.HTTP_200_OK
+                )
+            return Response({'error': 'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
