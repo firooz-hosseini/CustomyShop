@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 from . import views
+from rest_framework_simplejwt.views import TokenRefreshView
 
 
 router = DefaultRouter()
@@ -11,4 +12,7 @@ router.register('logout', views.LogoutApiView, basename='logout')
 
 
 
-urlpatterns = router.urls 
+urlpatterns = router.urls + [
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    
+]
