@@ -6,4 +6,4 @@ class RequestOtpSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['email', 'password', 'mobile', 'first_name', 'last_name']
+        fields = ['email', 'password', 'phone', 'first_name', 'last_name']

@@ -16,7 +16,7 @@ class RequestOtpView(viewsets.GenericViewSet):
         if serializer.is_valid():
             email = serializer.validated_data.get('email')
             password = serializer.validated_data.get('password')
-            mobile = serializer.validated_data.get('mobile')
+            phone = serializer.validated_data.get('phone')
             firs_name = serializer.validated_data.get('first_name')
             last_name = serializer.validated_data.get("last_name")
 
@@ -25,7 +25,7 @@ class RequestOtpView(viewsets.GenericViewSet):
             cache.set(f'otp_{otp_code}', {
                 'email': email,
                 'password': password,
-                'mobile': mobile,
+                'phone': phone,
                 'firs_name': firs_name,
                 'last_name': last_name,
 
