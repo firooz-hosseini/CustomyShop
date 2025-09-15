@@ -8,11 +8,14 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
+from .throttle import OtpRequestThrottle
 
 
 class RequestOtpApiView(viewsets.GenericViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = RequestOtpSerializer
+    throttle_classes = [OtpRequestThrottle]
 
     def create(self, request):
         serializer = RequestOtpSerializer(data=request.data)
