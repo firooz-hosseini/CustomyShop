@@ -9,7 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
-from .throttle import OtpRequestThrottle
+from .throttle import OtpRequestThrottle, OtpVerifyThrottle
 
 
 class RequestOtpApiView(viewsets.GenericViewSet):
@@ -23,7 +23,7 @@ class RequestOtpApiView(viewsets.GenericViewSet):
             email = serializer.validated_data.get('email')
             password = serializer.validated_data.get('password')
             phone = serializer.validated_data.get('phone')
-            firs_name = serializer.validated_data.get('first_name')
+            first_name = serializer.validated_data.get('first_name')
             last_name = serializer.validated_data.get("last_name")
 
 
@@ -32,7 +32,7 @@ class RequestOtpApiView(viewsets.GenericViewSet):
                 'email': email,
                 'password': password,
                 'phone': phone,
-                'firs_name': firs_name,
+                'first_name': first_name,
                 'last_name': last_name,
 
             }, timeout=300)
@@ -51,6 +51,7 @@ class RequestOtpApiView(viewsets.GenericViewSet):
 class VerifyOtpApiView(viewsets.GenericViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = VerifyOtpSerializer
+    throttle_classes = [OtpVerifyThrottle]
 
     def create(self, request):
         serializer = VerifyOtpSerializer(data=request.data)
