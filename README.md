@@ -7,7 +7,7 @@ A backend e-commerce application built with Django + DRF + JWT Auth + Celery + R
 - JWT-based authentication with OTP support
 - User registration, login, profile, and address management
 - Store creation and product management
-- Shopping cart, order checkout, and online payment (Zarinpal)
+- Shopping cart, order checkout, and online payment
 - Background tasks using Celery + Redis
 - Fully documented and tested API
 - Customized Django Admin Panel
@@ -39,9 +39,12 @@ pip install -r requirements.txt
 ### 3- Environment Variables
 Create a `.env` file in the root directory and set the required values:
 
+```bash
 SECRET_KEY=your_secret_key_here
 DEBUG=True
 ALLOWED_HOSTS=127.0.0.1,localhost
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 DB_ENGINE=your_db_engine
 DB_NAME=your_db_name
@@ -50,6 +53,14 @@ DB_PASSWORD=your_db_password
 DB_HOST='localhost'
 DB_PORT=your_db_port
 
+'ACCESS_TOKEN_LIFETIME': minutes,
+'REFRESH_TOKEN_LIFETIME': days,
+
+CELERY_BROKER_URL = 'your_celery_broker_url'
+CELERY_RESULT_BACKEND = 'your_celery_result_backend'
+
+CACHE_LOCATION = 'your_cache_location'
+```
 
 ### 4- Apply Database Migrations
 ```bash
