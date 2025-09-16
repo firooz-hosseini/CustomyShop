@@ -4,7 +4,7 @@ from django.core.mail import send_mail
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from .models import CustomUser
 from django.contrib.auth import authenticate
-
+from rest_framework.exceptions import ValidationError
 
 def create_otp(email, password, phone='', first_name='', last_name=''):
     otp_code = str(randint(100000, 999999))
@@ -74,12 +74,8 @@ def login_user(email, password):
 
 
 def logout_user(refresh_token):
-    if not refresh_token:
-        return 'Refresh token is required'
-
     try:
         token = RefreshToken(refresh_token)
         token.blacklist()
-        return None
-    except TokenError:
-        return 'Invalid or expired token'
+    except TokenError as t:
+        raise ValidationError(str(t))

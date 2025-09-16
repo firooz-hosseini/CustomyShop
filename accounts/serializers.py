@@ -40,4 +40,6 @@ class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only = True)
 
-    
+
+class LogoutSerializer(serializers.Serializer):
+    refresh_token = serializers.CharField(write_only=True)

@@ -1,6 +1,6 @@
 from rest_framework import viewsets, status
 from .models import CustomUser
-from .serializers import RequestOtpSerializer, VerifyOtpSerializer, LoginSerializer
+from .serializers import RequestOtpSerializer, VerifyOtpSerializer, LoginSerializer, LogoutSerializer
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
@@ -77,13 +77,15 @@ class LoginApiView(viewsets.GenericViewSet):
 
 
 class LogoutApiView(viewsets.GenericViewSet):
+    serializer_class = LogoutSerializer
     permission_classes = [IsAuthenticated]
 
     def create(self, request):
-        refresh_token = request.data.get('refresh')
-        error = logout_user(refresh_token)
-        if error:
-            return Response({'error': error}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        refresh_token = serializer.validated_data.get('refresh_token')
+        logout_user(refresh_token)
 
         return Response({'message': 'Successfully logged out from this device'}, status=status.HTTP_200_OK)
     
