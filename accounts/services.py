@@ -1,10 +1,10 @@
 from random import randint
 from django.core.cache import cache
-from django.core.mail import send_mail
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from .models import CustomUser
 from django.contrib.auth import authenticate
 from rest_framework.exceptions import ValidationError
+from .tasks import send_otp_email_task
 
 def create_otp(email, password, phone='', first_name='', last_name=''):
     otp_code = str(randint(100000, 999999))
@@ -17,12 +17,7 @@ def create_otp(email, password, phone='', first_name='', last_name=''):
         'last_name': last_name,
     }, timeout=300)
 
-    send_mail(
-        subject='OTP code',
-        message=f'Your OTP code: {otp_code}',
-        from_email='firo744@gmail.com',
-        recipient_list=[email],
-    )
+    send_otp_email_task.delay(email, otp_code)
 
 
 def verify_otp(email, otp_code):

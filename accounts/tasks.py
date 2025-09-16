@@ -17,3 +17,12 @@ def send_welcome_email_task(user_id):
     send_mail(subject, message, from_email, recipient_list, fail_silently=False)
     return {'status': 'sent', 'user': user_id}
 
+
+@shared_task
+def send_otp_email_task(email, otp_code):
+        send_mail(
+        subject='Your OTP Code',
+        message=f'Your OTP code is: {otp_code}',
+        from_email='firo744@gmail.com',
+        recipient_list=[email],
+    )
