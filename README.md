@@ -50,11 +50,11 @@ DB_ENGINE=your_db_engine
 DB_NAME=your_db_name
 DB_USER=your_db_user
 DB_PASSWORD=your_db_password
-DB_HOST='localhost'
+DB_HOST=your_db_host
 DB_PORT=your_db_port
 
-'ACCESS_TOKEN_LIFETIME': minutes,
-'REFRESH_TOKEN_LIFETIME': days,
+ACCESS_TOKEN_LIFETIME = minutes
+REFRESH_TOKEN_LIFETIME = days
 
 CELERY_BROKER_URL = 'your_celery_broker_url'
 CELERY_RESULT_BACKEND = 'your_celery_result_backend'
