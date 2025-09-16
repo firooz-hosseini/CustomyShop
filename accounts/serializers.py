@@ -29,6 +29,7 @@ class RequestOtpSerializer(serializers.ModelSerializer):
     
 
 class VerifyOtpSerializer(serializers.Serializer):
+    email = serializers.EmailField()
     otp_code = serializers.CharField(max_length=6,write_only=True)
 
     def validate_otp_code(self, value):

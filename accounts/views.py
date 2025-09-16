@@ -14,7 +14,7 @@ class RequestOtpApiView(viewsets.GenericViewSet):
     throttle_classes = [OtpRequestThrottle]
 
     def create(self, request):
-        serializer = self.serializer_class(data=request.data)
+        serializer = RequestOtpSerializer(data=request.data)
         if serializer.is_valid():
             data = serializer.validated_data
             create_otp(
@@ -35,18 +35,20 @@ class VerifyOtpApiView(viewsets.GenericViewSet):
     throttle_classes = [OtpVerifyThrottle]
 
     def create(self, request):
-        serializer = self.serializer_class(data=request.data)
+        serializer = VerifyOtpSerializer(data=request.data)
         if serializer.is_valid():
+            email = serializer.validated_data['email']
             otp_code = serializer.validated_data['otp_code']
-            result, error = verify_otp(otp_code)
+
+            result = verify_otp(email=email, otp_code=otp_code)
             
-            if error:
-                return Response({'error': error}, status=status.HTTP_400_BAD_REQUEST)
-            
+            if 'error' in result:   
+                return Response({'error': result['error']}, status=status.HTTP_400_BAD_REQUEST)
+
             return Response({
                 'message': 'User created successfully',
-                'refresh': result.get('refresh'),
-                'access': result.get('access')
+                'refresh': result['refresh'],
+                'access': result['access']
             }, status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

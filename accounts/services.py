@@ -8,8 +8,9 @@ from rest_framework.exceptions import ValidationError
 
 def create_otp(email, password, phone='', first_name='', last_name=''):
     otp_code = str(randint(100000, 999999))
-    cache.set(f'otp_{otp_code}', {
-        'email': email,
+
+    cache.set(f'otp_{email}', {
+        'otp_code': otp_code,
         'password': password,
         'phone': phone,
         'first_name': first_name,
@@ -22,16 +23,17 @@ def create_otp(email, password, phone='', first_name='', last_name=''):
         from_email='firo744@gmail.com',
         recipient_list=[email],
     )
-    return otp_code
 
 
-def verify_otp(otp_code):
-    cached_data = cache.get(f'otp_{otp_code}')
-    if not cached_data:
-        return None, 'Invalid OTP'
+def verify_otp(email, otp_code):
+    cached_data = cache.get(f'otp_{email}')
 
-    email = cached_data.get('email')
-    password = cached_data.get('password')
+    if not cached_data or cached_data.get('otp_code') != otp_code:
+        return {
+            'error': 'Invalid OTP'
+        }
+
+    email = email
     phone = cached_data.get('phone', '')
     first_name = cached_data.get('first_name', '')
     last_name = cached_data.get('last_name', '')
@@ -46,10 +48,10 @@ def verify_otp(otp_code):
     )
 
     if created:
-        user.set_password(password)
+        user.set_password(cached_data['password'])
         user.save()
 
-    cache.delete(f'otp_{otp_code}')
+    cache.delete(f'otp_{email}')
 
     refresh = RefreshToken.for_user(user)
     return {
@@ -57,7 +59,7 @@ def verify_otp(otp_code):
         'refresh': str(refresh),
         'access': str(refresh.access_token),
         'created': created
-    }, None
+    }
 
 
 def login_user(email, password):
