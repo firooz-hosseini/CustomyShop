@@ -2,8 +2,6 @@ from rest_framework import viewsets, status
 from .models import CustomUser
 from .serializers import RequestOtpSerializer, VerifyOtpSerializer, LoginSerializer
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken, TokenError
-from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from .throttles import OtpRequestThrottle, OtpVerifyThrottle
