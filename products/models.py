@@ -16,7 +16,7 @@ class Product(BaseModel):
 class Category(BaseModel):
     name = models.CharField(max_length=100)
     description = models.TextField()
-    image = models.ImageField(upload_to='category/')
+    image = models.ImageField(upload_to='category/', blank=True, null=True)
     is_active = models.BooleanField(default=True)
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')
 
