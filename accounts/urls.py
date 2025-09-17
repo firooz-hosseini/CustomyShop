@@ -10,9 +10,10 @@ router.register('accounts/verify-otp', views.VerifyOtpApiView, basename='verify_
 router.register('accounts/login', views.LoginApiView, basename='login')
 router.register('accounts/logout', views.LogoutApiView, basename='logout')
 router.register('', views.ProfileApiView, basename='myuser')
+router.register('myuser/address', views.AddressApiView, basename='address')
 
 
 urlpatterns = router.urls + [
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('accounts/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     
 ]

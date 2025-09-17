@@ -16,7 +16,7 @@ class Store(BaseModel):
 class StoreItem(BaseModel):
     stock = models.PositiveIntegerField(default=0)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    discount_price = models.DecimalField(max_digits=10, decimal_places=2)
+    discount_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='storeitem_product')
     Store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='storeitem_store')

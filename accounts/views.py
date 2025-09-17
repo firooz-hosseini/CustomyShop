@@ -1,13 +1,13 @@
 from rest_framework import viewsets, status
-from .models import CustomUser
-from .serializers import RequestOtpSerializer, VerifyOtpSerializer, LoginSerializer, LogoutSerializer, ProfileSerializer
+from .serializers import RequestOtpSerializer, VerifyOtpSerializer, LoginSerializer, LogoutSerializer, ProfileSerializer, AddressSerializer
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from .throttles import OtpRequestThrottle, OtpVerifyThrottle
 from .services import create_otp, verify_otp, login_user, logout_user
 from rest_framework.decorators import action
-
+from .models import Address
+from .permissions import IsOwnerOrStore
+from rest_framework.serializers import ValidationError
 
 class RequestOtpApiView(viewsets.GenericViewSet):
     serializer_class = RequestOtpSerializer
@@ -113,8 +113,24 @@ class ProfileApiView(viewsets.GenericViewSet):
             return Response(serializer.data)
     
 
+class AddressApiView(viewsets.ModelViewSet):
+    serializer_class = AddressSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrStore]
 
+    def get_queryset(self):
+        user = self.request.user
+        user_addresses = Address.objects.filter(user=user)
+        store_addresses = Address.objects.filter(store__in=user.store_seller.all())
+        return user_addresses | store_addresses
     
+    def perform_create(self, serializer):
+        user = self.request.user
+        store_id = self.request.data.get('store_id')
 
-
-
+        if store_id:
+            store = user.store_seller.filter(id=store_id).first()
+            if not store:
+                raise ValidationError("Store not found or does not belong to you.")
+            serializer.save(store=store)
+        else:
+            serializer.save(user=user)
