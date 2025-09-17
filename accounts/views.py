@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from .models import Address
 from .permissions import IsOwnerOrStore
 from rest_framework.serializers import ValidationError
+from django.shortcuts import get_object_or_404
 
 class RequestOtpApiView(viewsets.GenericViewSet):
     serializer_class = RequestOtpSerializer
@@ -121,16 +122,14 @@ class AddressApiView(viewsets.ModelViewSet):
         user = self.request.user
         user_addresses = Address.objects.filter(user=user)
         store_addresses = Address.objects.filter(store__in=user.store_seller.all())
-        return user_addresses | store_addresses
+        return (user_addresses | store_addresses).distinct()
     
     def perform_create(self, serializer):
         user = self.request.user
         store_id = self.request.data.get('store_id')
 
         if store_id:
-            store = user.store_seller.filter(id=store_id).first()
-            if not store:
-                raise ValidationError("Store not found or does not belong to you.")
+            store = get_object_or_404(user.store_seller, id=store_id)
             serializer.save(store=store)
         else:
             serializer.save(user=user)
