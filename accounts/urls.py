@@ -5,10 +5,10 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 
 router = DefaultRouter()
-router.register('request-otp', views.RequestOtpApiView, basename='request_otp')
-router.register('verify-otp', views.VerifyOtpApiView, basename='verify_otp')
-router.register('login', views.LoginApiView, basename='login')
-router.register('logout', views.LogoutApiView, basename='logout')
+router.register('accounts/request-otp', views.RequestOtpApiView, basename='request_otp')
+router.register('accounts/verify-otp', views.VerifyOtpApiView, basename='verify_otp')
+router.register('accounts/login', views.LoginApiView, basename='login')
+router.register('accounts/logout', views.LogoutApiView, basename='logout')
 router.register('', views.ProfileApiView, basename='myuser')
 
 
