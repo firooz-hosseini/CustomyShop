@@ -8,7 +8,7 @@ services:
     volumes:
       - .:/app
     env_file:
-      - ./.env
+      - .env_docker
     depends_on:
       - db
       - redis
@@ -39,7 +39,7 @@ services:
     volumes:
       - .:/app
     env_file:
-      - ./.env
+      - .env_docker
     depends_on:
       - db
       - redis
