@@ -20,11 +20,17 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(email, password, **kwargs)
 
 class CustomUser(AbstractUser, BaseModel):
+    ROLE_CHOICES = [
+        ('customer', 'Customer'),
+        ('seller', 'Seller'),
+    ]
+
     username = None
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=15, blank=True, null=True)
     image = models.ImageField(upload_to='user/', null=True, blank=True)
     is_seller = models.BooleanField(default=False)
+    role = models.CharField(max_length=10,choices=ROLE_CHOICES, default='customer')
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
