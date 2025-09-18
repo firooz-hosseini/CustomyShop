@@ -1,15 +1,16 @@
 from rest_framework import viewsets, status
-from .models import CustomUser
-from .serializers import RequestOtpSerializer, VerifyOtpSerializer, LoginSerializer, LogoutSerializer
+from .serializers import RequestOtpSerializer, VerifyOtpSerializer, LoginSerializer, LogoutSerializer, ProfileSerializer, AddressSerializer
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from .throttles import OtpRequestThrottle, OtpVerifyThrottle
 from .services import create_otp, verify_otp, login_user, logout_user
-
+from rest_framework.decorators import action
+from .models import Address
+from .permissions import IsOwnerOrStore
+from rest_framework.serializers import ValidationError
+from django.shortcuts import get_object_or_404
 
 class RequestOtpApiView(viewsets.GenericViewSet):
-    queryset = CustomUser.objects.all()
     serializer_class = RequestOtpSerializer
     throttle_classes = [OtpRequestThrottle]
 
@@ -30,7 +31,6 @@ class RequestOtpApiView(viewsets.GenericViewSet):
 
 
 class VerifyOtpApiView(viewsets.GenericViewSet):
-    queryset = CustomUser.objects.all()
     serializer_class = VerifyOtpSerializer
     throttle_classes = [OtpVerifyThrottle]
 
@@ -56,7 +56,6 @@ class VerifyOtpApiView(viewsets.GenericViewSet):
 
 
 class LoginApiView(viewsets.GenericViewSet):
-    queryset = CustomUser.objects.all()
     serializer_class = LoginSerializer
 
     def create(self, request):
@@ -91,3 +90,46 @@ class LogoutApiView(viewsets.GenericViewSet):
 
         return Response({'message': 'Successfully logged out from this device'}, status=status.HTTP_200_OK)
     
+
+class ProfileApiView(viewsets.GenericViewSet):
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['get', 'put', 'patch'])
+    def myuser(self, request):
+        if request.method == 'GET':
+            serializer = ProfileSerializer(request.user)
+            return Response(serializer.data)
+        
+        elif request.method == 'PUT':
+            serializer = ProfileSerializer(request.user, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+        
+        elif request.method == 'PATCH':
+            serializer = ProfileSerializer(request.user, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+    
+
+class AddressApiView(viewsets.ModelViewSet):
+    serializer_class = AddressSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrStore]
+
+    def get_queryset(self):
+        user = self.request.user
+        user_addresses = Address.objects.filter(user=user)
+        store_addresses = Address.objects.filter(store__in=user.store_seller.all())
+        return (user_addresses | store_addresses).distinct()
+    
+    def perform_create(self, serializer):
+        user = self.request.user
+        store_id = self.request.data.get('store_id')
+
+        if store_id:
+            store = get_object_or_404(user.store_seller, id=store_id)
+            serializer.save(store=store)
+        else:
+            serializer.save(user=user)
