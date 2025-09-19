@@ -2,9 +2,10 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import SellerRequest, Store, StoreItem
-from .serializers import SellerRequestSerializer, StoreSerializer, StoreItemSerializer
-from accounts.models import CustomUser
+from .serializers import SellerRequestSerializer, StoreSerializer, StoreItemSerializer, StoreAddressSerializer
+from accounts.models import CustomUser, Address
 from .permissions import IsOwnerOrAdmin
+from django.shortcuts import get_object_or_404
 
 
 class SellerRequestViewSet(viewsets.GenericViewSet):
@@ -90,3 +91,30 @@ class StoreItemApiViewSet(viewsets.ModelViewSet):
             raise PermissionError("You can only delete items from your own store.")
 
         instance.delete()
+
+
+class StoreAddressApiView(viewsets.ModelViewSet):
+    serializer_class = StoreAddressSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Address.objects.filter(store__seller=user)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        store_id = self.request.data.get('store_id')
+        if not store_id:
+            raise ValueError("store_id is required to create an address.")
+
+        store = get_object_or_404(Store, id=store_id, seller=user)
+        serializer.save(store=store)
+
+        user = self.request.user
+        store_id = self.request.data.get('store_id')
+
+        if store_id:
+            store = get_object_or_404(user.store_seller, id=store_id)
+            serializer.save(store=store)
+        else:
+            serializer.save(user=user)
