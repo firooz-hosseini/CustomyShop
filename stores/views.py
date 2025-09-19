@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import SellerRequest, Store, StoreItem
-from .serializers import SellerRequestSerializer, StoreSerializer
+from .serializers import SellerRequestSerializer, StoreSerializer, StoreItemSerializer
 from accounts.models import CustomUser
 from .permissions import IsOwnerOrAdmin
 
@@ -32,7 +32,7 @@ class SellerRequestViewSet(viewsets.GenericViewSet):
 class StoreApiViewSet(viewsets.ModelViewSet):
 
     serializer_class = StoreSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
@@ -52,3 +52,41 @@ class StoreApiViewSet(viewsets.ModelViewSet):
             raise PermissionError("You already have a store.")
 
         serializer.save(seller=user)
+
+
+class StoreItemApiViewSet(viewsets.ModelViewSet):
+    serializer_class = StoreItemSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return StoreItem.objects.all()
+        return StoreItem.objects.filter(store__seller=user)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        store = serializer.validated_data.get('store')
+
+        if store.seller != user:
+            raise PermissionError("You can only add items to your own store.")
+
+        serializer.save()
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        store = serializer.instance.store
+
+        if store.seller != user:
+            raise PermissionError("You can only update items in your own store.")
+
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        user = self.request.user
+        store = instance.store
+
+        if store.seller != user:
+            raise PermissionError("You can only delete items from your own store.")
+
+        instance.delete()
