@@ -7,7 +7,7 @@ import os
 # A different way of approaching this would be to have a separate set of env variables for tests.
 os.environ.setdefault("DEBUG_TOOLBAR_ENABLED", "False")
 
-from .base import *  # noqa
+from .docker import *  # noqa
 
 # Based on https://www.hacksoft.io/blog/optimize-django-build-to-run-faster-on-github-actions
 
