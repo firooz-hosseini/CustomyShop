@@ -7,6 +7,6 @@ db.sqlite3
 media/
 static/
 /frontend
+.env_dev
 .env_docker
 
-.env_dev

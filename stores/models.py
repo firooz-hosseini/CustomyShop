@@ -24,6 +24,18 @@ class StoreItem(BaseModel):
     def __str__(self):
         return f"{self.product.name} ({self.store.name})"
 
+class SellerRequest(BaseModel):
+    STATUS_CHOICES = [
+        ('pendign', 'Pending'),
+        ('approved', 'Approved'),
+        ('regected', 'Rejected'),
+    ]
 
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sellerrequest_user')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pernding')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.status}"
 
 
