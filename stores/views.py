@@ -1,8 +1,11 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import SellerRequest
-from .serializers import SellerRequestSerializer
+from .models import SellerRequest, Store, StoreItem
+from .serializers import SellerRequestSerializer, StoreSerializer
+from accounts.models import CustomUser
+from .permissions import IsOwnerOrAdmin
+
 
 class SellerRequestViewSet(viewsets.GenericViewSet):
     serializer_class = SellerRequestSerializer
@@ -25,3 +28,27 @@ class SellerRequestViewSet(viewsets.GenericViewSet):
         seller_request = SellerRequest.objects.create(user=request.user)
         serializer = self.get_serializer(seller_request)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+class StoreApiViewSet(viewsets.ModelViewSet):
+
+    serializer_class = StoreSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Store.objects.all()
+        return Store.objects.filter(seller=user)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if user.role != 'seller':
+            raise PermissionError("You are not a seller.")
+
+        if not SellerRequest.objects.filter(user=user, status=SellerRequest.APPROVED).exists():
+            raise PermissionError("Your seller request has not been approved yet.")
+
+        if Store.objects.filter(seller=user).exists():
+            raise PermissionError("You already have a store.")
+
+        serializer.save(seller=user)

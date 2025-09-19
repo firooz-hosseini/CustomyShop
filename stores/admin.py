@@ -26,6 +26,7 @@ class SellerRequestAdmin(admin.ModelAdmin):
 
             user = req.user
             user.role = 'seller'
+            user.is_seller = True
             user.save()
 
     approve_request.short_description = "Approve selected requests and create store"
