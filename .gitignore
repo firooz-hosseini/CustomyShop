@@ -8,5 +8,5 @@ media/
 static/
 /frontend
 .env_dev
-.gitignore
 .env_docker
+

@@ -1,0 +1,49 @@
+services:
+  web:
+    build: .
+    container_name: customyshop_web
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    env_file:
+      - .env_docker
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:15
+    container_name: customyshop_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  redis:
+    image: redis:7
+    container_name: customyshop_redis
+    ports:
+      - "6379:6379"
+
+  celery:
+    build: .
+    container_name: customyshop_celery
+    command: celery -A CustomyShop worker -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env_docker
+    depends_on:
+      - db
+      - redis
+      - web
+
+volumes:
+  postgres_data:
