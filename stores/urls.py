@@ -4,7 +4,7 @@ from . import views
 
 
 router = DefaultRouter()
-router.register('myuser/register_as_seller', views.SellerRequestViewSet, basename='seller_request')
+router.register('myuser/register_as_seller', views.SellerRequestViewSet, basename='seller_requests')
 
 
 urlpatterns = router.urls 
