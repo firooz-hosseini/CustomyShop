@@ -5,7 +5,7 @@ from products.models import Product
 
 
 class Store(BaseModel):
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=50)
     description = models.TextField(blank=True)
     seller = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='store_seller')
 
@@ -25,14 +25,18 @@ class StoreItem(BaseModel):
         return f"{self.product.name} ({self.store.name})"
 
 class SellerRequest(BaseModel):
+    PENDING = 'pending'
+    APPROVED = 'approved'
+    REJECTED = 'rejected'
+
     STATUS_CHOICES = [
-        ('pendign', 'Pending'),
-        ('approved', 'Approved'),
-        ('regected', 'Rejected'),
+        (PENDING, 'Pending'),
+        (APPROVED, 'Approved'),
+        (REJECTED, 'Rejected'),
     ]
 
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sellerrequest_user')
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pernding')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     reviewed_at = models.DateTimeField(null=True, blank=True)
     
     def __str__(self):
