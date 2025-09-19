@@ -4,7 +4,7 @@ from . import views
 
 
 router = DefaultRouter()
-# router.register('accounts/request-otp', views.RequestOtpApiView, basename='request_otp')
+router.register('myuser/register_as_seller', views.SellerRequestViewSet, basename='seller_request')
 
 
 urlpatterns = router.urls 
