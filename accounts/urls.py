@@ -10,7 +10,7 @@ router.register('accounts/verify-otp', views.VerifyOtpApiView, basename='verify_
 router.register('accounts/login', views.LoginApiView, basename='login')
 router.register('accounts/logout', views.LogoutApiView, basename='logout')
 router.register('', views.ProfileApiView, basename='myuser')
-router.register('myuser/address', views.AddressApiView, basename='address')
+router.register('myuser/address', views.UserAddressApiView, basename='user_address')
 
 
 urlpatterns = router.urls + [

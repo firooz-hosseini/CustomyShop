@@ -1,5 +1,5 @@
 from rest_framework import viewsets, status
-from .serializers import RequestOtpSerializer, VerifyOtpSerializer, LoginSerializer, LogoutSerializer, ProfileSerializer, AddressSerializer
+from .serializers import RequestOtpSerializer, VerifyOtpSerializer, LoginSerializer, LogoutSerializer, ProfileSerializer, UserAddressSerializer
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .throttles import OtpRequestThrottle, OtpVerifyThrottle
@@ -114,22 +114,15 @@ class ProfileApiView(viewsets.GenericViewSet):
             return Response(serializer.data)
     
 
-class AddressApiView(viewsets.ModelViewSet):
-    serializer_class = AddressSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrStore]
+class UserAddressApiView(viewsets.ModelViewSet):
+    serializer_class = UserAddressSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
         user_addresses = Address.objects.filter(user=user)
-        store_addresses = Address.objects.filter(store__in=user.store_seller.all())
-        return (user_addresses | store_addresses).distinct()
+        return (user_addresses)
     
     def perform_create(self, serializer):
         user = self.request.user
-        store_id = self.request.data.get('store_id')
-
-        if store_id:
-            store = get_object_or_404(user.store_seller, id=store_id)
-            serializer.save(store=store)
-        else:
-            serializer.save(user=user)
+        serializer.save(user=user)

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import SellerRequest, Store, StoreItem
-from accounts.models import CustomUser
+from accounts.models import CustomUser, Address
 from products.models import Product
 
 class SellerRequestSerializer(serializers.ModelSerializer):
@@ -27,3 +27,14 @@ class StoreItemSerializer(serializers.ModelSerializer):
         model = StoreItem
         fields = ['id', 'stock', 'price', 'discount_price', 'is_active', 'product', 'product_name', 'store', 'store_name']
 
+
+class StoreAddressSerializer(serializers.ModelSerializer):
+    store_name = serializers.ReadOnlyField(source='store.name')
+
+    class Meta:
+        model = Address
+        fields = [
+            "id", "label", "address_line_1", "address_line_2",
+            "city", "state", "country", "postal_code", "store", "store_name"
+        ]
+        read_only_fields = ["store"]

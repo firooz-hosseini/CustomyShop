@@ -52,7 +52,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = ['email', 'first_name', 'last_name', 'phone' , 'image']
 
 
-class AddressSerializer(serializers.ModelSerializer):
+class UserAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
         fields = '__all__'
