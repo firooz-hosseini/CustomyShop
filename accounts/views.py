@@ -6,9 +6,9 @@ from .throttles import OtpRequestThrottle, OtpVerifyThrottle
 from .services import create_otp, verify_otp, login_user, logout_user
 from rest_framework.decorators import action
 from .models import Address
-from .permissions import IsOwnerOrStore
-from rest_framework.serializers import ValidationError
-from django.shortcuts import get_object_or_404
+
+
+
 
 class RequestOtpApiView(viewsets.GenericViewSet):
     serializer_class = RequestOtpSerializer
