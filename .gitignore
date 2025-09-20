@@ -1,13 +1,32 @@
-.venv
-*.pyc
+# Python cache
 __pycache__/
+*.py[cod]
+
+# Django stuff
 db.sqlite3
-.env
-/static/
+db.sqlite3-journal
 media/
 static/
-/frontend
+staticfiles/
+
+
+# Environment & secrets
+.env
 .env_dev
 .env_docker
 
+# Docker data
+dump.rdb
+postgres_data/
+redis_data/
 
+# Virtual environment
+venv/
+.venv/
+
+# IDE files
+.vscode/
+.idea/
+
+
+/frontend
