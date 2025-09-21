@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import Store, StoreItem, SellerRequest
 from django.utils import timezone
-from accounts.models import CustomUser
+
 
 admin.site.register(Store)
 admin.site.register(StoreItem)
@@ -29,7 +29,7 @@ class SellerRequestAdmin(admin.ModelAdmin):
             user.is_seller = True
             user.save()
 
-    approve_request.short_description = "Approve selected requests and create store"
+    approve_request.short_description = "Approve selected requests"
 
     def reject_request(self, request, queryset):
         for req in queryset:
