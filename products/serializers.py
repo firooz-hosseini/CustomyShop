@@ -1,11 +1,16 @@
 from rest_framework import serializers
 from products.models import Product, Category, ProductImage
 
+class RecursiveField(serializers.Serializer):
+    def to_representation(self, value):
+        serializer = self.parent.parent.__class__(value, context= self.context)
+        return serializer.data
 
 class CategorySerializer(serializers.ModelSerializer):
+    children = RecursiveField(many=True, read_only=True)
     class Meta:
         model = Category
-        fields = ['id', 'name', 'description', 'image', 'is_active', 'parent']
+        fields = ['id', 'name', 'description', 'image', 'is_active', 'parent', 'children']
 
 class ProductImageSerializer(serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source='product.name')
