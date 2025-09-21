@@ -35,6 +35,6 @@ class StoreAddressSerializer(serializers.ModelSerializer):
         model = Address
         fields = [
             "id", "label", "address_line_1", "address_line_2",
-            "city", "state", "country", "postal_code", "store", "store_name"
+            "city", "state", "country", "postal_code", 'is_default', "store", "store_name"
         ]
         read_only_fields = ["store"]

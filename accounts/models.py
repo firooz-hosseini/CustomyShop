@@ -50,6 +50,12 @@ class Address(BaseModel):
     state = models.CharField(max_length=20)
     country = models.CharField(max_length=20)
     postal_code = models.CharField(max_length=20)
+    is_default = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if self.is_default:
+            Address.objects.filter(user=self.user, is_default=True).update(is_default=False)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.label} - {self.city}'

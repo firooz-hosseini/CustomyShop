@@ -55,6 +55,6 @@ class ProfileSerializer(serializers.ModelSerializer):
 class UserAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
-        fields = ['id', 'user', 'store', 'label', 'address_line_1', 'address_line_2', 'city', 'state', 'country', 'postal_code', ]
+        fields = ['id', 'user', 'store', 'label', 'address_line_1', 'address_line_2', 'city', 'state', 'country', 'postal_code', 'is_default' ]
 
         read_only_fields = ['id', 'user', 'store','created_at', 'updated_at','is_deleted','deleted_at']
