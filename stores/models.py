@@ -1,13 +1,13 @@
 from django.db import models
 from core.models import BaseModel
-from accounts.models import CustomUser
+from django.contrib.auth import get_user_model
 from products.models import Product
 
 
 class Store(BaseModel):
     name = models.CharField(max_length=50)
     description = models.TextField(blank=True)
-    seller = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='store_seller')
+    seller = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name='store_seller')
 
     def __str__(self):
         return self.name
@@ -35,7 +35,7 @@ class SellerRequest(BaseModel):
         (REJECTED, 'Rejected'),
     ]
 
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sellerrequest_user')
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name='sellerrequest_user')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     reviewed_at = models.DateTimeField(null=True, blank=True)
     

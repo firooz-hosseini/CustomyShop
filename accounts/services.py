@@ -1,7 +1,7 @@
 from random import randint
 from django.core.cache import cache
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
-from .models import CustomUser
+from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
 from rest_framework.exceptions import ValidationError
 from .tasks import send_otp_email_task
@@ -33,7 +33,7 @@ def verify_otp(email, otp_code):
     first_name = cached_data.get('first_name', '')
     last_name = cached_data.get('last_name', '')
 
-    user, created = CustomUser.objects.get_or_create(
+    user, created = get_user_model().objects.get_or_create(
         email=email,
         defaults={
             'phone': phone,
@@ -51,8 +51,8 @@ def verify_otp(email, otp_code):
     refresh = RefreshToken.for_user(user)
     return {
         'user': user,
-        'refresh': str(refresh),
         'access': str(refresh.access_token),
+        'refresh': str(refresh),
         'created': created
     }
 
@@ -65,8 +65,8 @@ def login_user(email, password):
     refresh = RefreshToken.for_user(user)
     return {
         'user': user,
-        'refresh': str(refresh),
-        'access': str(refresh.access_token)
+        'access': str(refresh.access_token),
+        'refresh': str(refresh)
     }, None
 
 

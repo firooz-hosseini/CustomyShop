@@ -47,8 +47,8 @@ class VerifyOtpApiView(viewsets.GenericViewSet):
 
             return Response({
                 'message': 'User created successfully',
-                'refresh': result['refresh'],
-                'access': result['access']
+                'access': result['access'],
+                'refresh': result['refresh']
             }, status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -70,8 +70,8 @@ class LoginApiView(viewsets.GenericViewSet):
 
             return Response({
                     'message': 'Login successful',
-                    'refresh': result['refresh'],
-                    'access': result['access']
+                    'access': result['access'],
+                    'refresh': result['refresh']
                 }, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

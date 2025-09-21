@@ -1,6 +1,6 @@
 from django.db import models
 from core.models import BaseModel
-from accounts.models import CustomUser
+from django.contrib.auth import get_user_model
 
 
 class Product(BaseModel):
@@ -30,7 +30,7 @@ class ProductImage(BaseModel):
 
 
 class Comment(BaseModel):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='comment_user')
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name='comment_user')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='comment_product')
     description = models.TextField()
     is_approved = models.BooleanField(default=False)
@@ -42,7 +42,7 @@ class Comment(BaseModel):
 
 class Rating(BaseModel):
     scores = [(1, 'very bad'), (2, 'bad'), (3, 'normal'),(4, 'good'),(5, 'very good')]
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='rating_user')
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name='rating_user')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='rating_product')
     rating = models.PositiveIntegerField(choices=scores)
 

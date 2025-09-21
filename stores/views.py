@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import SellerRequest, Store, StoreItem
 from .serializers import SellerRequestSerializer, StoreSerializer, StoreItemSerializer, StoreAddressSerializer
-from accounts.models import CustomUser, Address
+from accounts.models import Address
 from .permissions import IsOwnerOrAdmin
 from django.shortcuts import get_object_or_404
 
