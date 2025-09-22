@@ -8,7 +8,7 @@ User = get_user_model()
 
 class StoreTets(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(email="seller@store.com", password="pass123", role="seller")
+        self.user = User.objects.create_user(email="seller@store.com", password="pass1234", role="seller")
         self.client.force_authenticate(user=self.user)
 
     def test_create_store_without_approval_fails(self):
