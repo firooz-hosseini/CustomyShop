@@ -6,6 +6,8 @@ from .serializers import SellerRequestSerializer, StoreSerializer, StoreItemSeri
 from accounts.models import Address
 from .permissions import IsOwnerOrAdmin
 from django.shortcuts import get_object_or_404
+from rest_framework.exceptions import PermissionDenied
+
 
 
 class SellerRequestViewSet(viewsets.GenericViewSet):
@@ -44,13 +46,13 @@ class StoreApiViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user = self.request.user
         if user.role != 'seller':
-            raise PermissionError("You are not a seller.")
+            raise PermissionDenied("You are not a seller.")
 
         if not SellerRequest.objects.filter(user=user, status=SellerRequest.APPROVED).exists():
-            raise PermissionError("Your seller request has not been approved yet.")
+            raise PermissionDenied("Your seller request has not been approved yet.")
 
         if Store.objects.filter(seller=user).exists():
-            raise PermissionError("You already have a store.")
+            raise PermissionDenied("You already have a store.")
 
         serializer.save(seller=user)
 
@@ -70,7 +72,7 @@ class StoreItemApiViewSet(viewsets.ModelViewSet):
         store = serializer.validated_data.get('store')
 
         if store.seller != user:
-            raise PermissionError("You can only add items to your own store.")
+            raise PermissionDenied("You can only add items to your own store.")
 
         serializer.save()
 
@@ -79,7 +81,7 @@ class StoreItemApiViewSet(viewsets.ModelViewSet):
         store = serializer.instance.store
 
         if store.seller != user:
-            raise PermissionError("You can only update items in your own store.")
+            raise PermissionDenied("You can only update items in your own store.")
 
         serializer.save()
 
@@ -88,7 +90,7 @@ class StoreItemApiViewSet(viewsets.ModelViewSet):
         store = instance.store
 
         if store.seller != user:
-            raise PermissionError("You can only delete items from your own store.")
+            raise PermissionDenied("You can only delete items from your own store.")
 
         instance.delete()
 
