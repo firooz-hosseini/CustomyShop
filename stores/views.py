@@ -24,7 +24,7 @@ class SellerRequestViewSet(viewsets.GenericViewSet):
 
     def create(self, request, *args, **kwargs):
         if SellerRequest.objects.filter(user=request.user, status='pending').exists():
-            return Response({"detail": "You already have a pending request."}, status=400)
+            return Response({"detail": "You already have a pending request."}, status=status.HTTP_400_BAD_REQUEST)
 
         seller_request = SellerRequest.objects.create(user=request.user)
         serializer = self.get_serializer(seller_request)
