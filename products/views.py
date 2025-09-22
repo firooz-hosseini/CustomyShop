@@ -18,7 +18,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     filter_backends = [SearchFilter, DjangoFilterBackend, OrderingFilter]
     search_fields = ['name','description']
     filterset_class = ProductFilter
-    ordering_fields = ['name', 'stock']
+    ordering_fields = ['name']
     ordering = ['id']
 
 

@@ -12,7 +12,6 @@ class ProductFilter(filters.FilterSet):
         fields = ['category']
 
     def filter_category(self, queryset, name, value):
-        # value is a Category instance now
         category_ids = self.get_descendant_ids(value)
         return queryset.filter(category__id__in=category_ids)
 
