@@ -23,8 +23,6 @@ class CartItem(BaseModel):
     store_item = models.ForeignKey(StoreItem, on_delete=models.CASCADE, related_name='cartitem_storeitem')
     quantity = models.PositiveIntegerField(default=1)
 
-    class Meta:
-        unique_together = ("cart", "store_item")
 
     @property
     def total_price(self):
