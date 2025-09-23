@@ -1,14 +1,19 @@
 from django.db import models
 from core.models import BaseModel
-from accounts.models import CustomUser, Address
+from accounts.models import Address
 from stores.models import StoreItem
+from django.contrib.auth import get_user_model
 
+
+User = get_user_model()
 
 class Cart(BaseModel):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='cart_user')
-    total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='cart_user')
     total_discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
+    def total_price(self):
+        return sum(item.total_price for item in self.cartitem_cart.all())
+    
     def __str__(self):
         return f'Cart of {self.user.email}'
 
@@ -16,7 +21,14 @@ class Cart(BaseModel):
 class CartItem(BaseModel):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cartitem_cart')
     store_item = models.ForeignKey(StoreItem, on_delete=models.CASCADE, related_name='cartitem_storeitem')
-    quantity = models.PositiveIntegerField()
+    quantity = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        unique_together = ("cart", "store_item")
+
+    @property
+    def total_price(self):
+        return self.quantity * self.store_item.price
 
     def __str__(self):
         return f'{self.store_item.product.name} x {self.quantity}'
@@ -25,7 +37,7 @@ class CartItem(BaseModel):
 class Order(BaseModel):
     ORDER_STATUS = [(1,'Pending'),(2,'Processing'),(3,'Delivered'),(4,'Cancelled'),(5,'Failed')]
     address = models.ForeignKey(Address, on_delete=models.CASCADE, related_name='order_customer')
-    customer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='order_address')
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='order_address')
     status = models.PositiveIntegerField(choices=ORDER_STATUS, default=1)
     total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
