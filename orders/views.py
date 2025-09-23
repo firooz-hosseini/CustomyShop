@@ -42,7 +42,7 @@ class CartApiView(viewsets.GenericViewSet):
             return Response({'message': 'Store item not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         if store_item.stock <= 0:
-            return Response({"detail": "This product is out of stock."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'This product is out of stock.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if quantity > store_item.stock:
             return Response(
@@ -85,7 +85,7 @@ class CartApiView(viewsets.GenericViewSet):
 
         if quantity > store_item.stock:
             return Response(
-                {"detail": f"Only {store_item.stock} items available in stock."},
+                {'detail': f'Only {store_item.stock} items available in stock.'},
                 status=400,
             )
         
@@ -98,8 +98,19 @@ class CartApiView(viewsets.GenericViewSet):
         
         return Response(CartSerializer(cart).data)
     
+    @action(detail=True, methods=['delete'])
+    def remove_item(self, request, pk=None):
+        cart = self.get_object()
+        try:
+            cart_item = cart.cartitem_cart.get(id=pk)
+        except CartItem.DoesNotExist:
+            return Response({'message': 'Cart item not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        cart_item.delete()
+        return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=['delete'])
-    def clear(self, request):
+    def clear_cart(self, request):
         cart = self.get_object()
         cart.cartitem_cart.all().delete()
         return Response({'detail': 'Cart cleared.'}, status=status.HTTP_204_NO_CONTENT)
