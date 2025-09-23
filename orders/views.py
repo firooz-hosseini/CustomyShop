@@ -59,3 +59,9 @@ class CartApiView(viewsets.GenericViewSet):
             cart_item.save()
         
         return Response(CartSerializer(cart).data)
+    
+    @action(detail=False, methods=['delete'])
+    def clear(self, request):
+        cart = self.get_object()
+        cart.cartitem_cart.all().delete()
+        return Response({'detail': 'Cart cleared.'}, status=status.HTTP_204_NO_CONTENT)
