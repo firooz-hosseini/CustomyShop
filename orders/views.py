@@ -42,3 +42,20 @@ class CartApiView(viewsets.GenericViewSet):
         
         cart_item.save()
         return Response(CartSerializer(cart).data, status=status.HTTP_201_CREATED)
+    
+    @action(detail=False, methods=['patch'])
+    def update_quantity(self, request):
+        serializer = UpdateCartQuantitySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        cart = self.get_object()
+        cart_item = cart.cartitem_cart.get(id=serializer.validated_data['cart_item_id'])
+        quantity = serializer.validated_data['quantity']
+
+        if quantity ==0:
+            cart_item.delete()
+            
+        else:
+            cart_item.quantity = quantity
+            cart_item.save()
+        
+        return Response(CartSerializer(cart).data)
