@@ -40,4 +40,6 @@ class StoreItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = StoreItem
         fields = ['id', 'stock', 'price', 'discount_price', 'is_active', 'product', 'product_name', 'store', 'store_name']
+        
+
 
