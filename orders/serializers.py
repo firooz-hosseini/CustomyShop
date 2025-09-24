@@ -1,8 +1,8 @@
 from rest_framework import serializers
-from .models import Cart, CartItem
+from .models import Cart, CartItem, Order, OrderItem
 from products.models import ProductImage
 from stores.models import StoreItem
-
+from accounts.models import Address
 
 class ImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -69,3 +69,31 @@ class UpdateCartQuantitySerializer(serializers.Serializer):
 
 class ApplyCartDiscountSerializer(serializers.Serializer):
     discount_value = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=0)
+
+
+
+class CheckoutSerializer(serializers.Serializer):
+    address_id = serializers.IntegerField()
+    payment_method = serializers.ChoiceField(choices=[("online","Online"), ("cod","COD")], default="online")
+
+    def validate_address_id(self, value):
+        user = self.context["request"].user
+        if not Address.objects.filter(id=value, user=user).exists():
+            raise serializers.ValidationError("Address not found.")
+        return value
+    
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.ReadOnlyField(source="store_item.product.name")
+
+    class Meta:
+        model = OrderItem
+        fields = ["id", "store_item", "product_name", "price", "quantity", "total_price"]
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    order_items = OrderItemSerializer(source="orderitem_order", many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = ["id", "customer", "address", "status", "total_price", "total_discount", "order_items"]

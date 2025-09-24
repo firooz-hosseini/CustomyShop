@@ -3,9 +3,10 @@ from .serializers import (
     CartSerializer,
     AddToCartSerializer,
     UpdateCartQuantitySerializer,
-    ApplyCartDiscountSerializer
+    ApplyCartDiscountSerializer, 
+    OrderSerializer, CheckoutSerializer
 )
-from .models import Cart, CartItem
+from .models import Cart, CartItem, Order, OrderItem, Payment
 from stores.models import StoreItem
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -129,3 +130,83 @@ class CartApiView(viewsets.GenericViewSet):
         cart.save(update_fields=['total_discount'])
 
         return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
+    
+
+
+class OrderViewSet(viewsets.GenericViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = OrderSerializer
+
+    def get_queryset(self):
+        return Order.objects.filter(customer=self.request.user).prefetch_related("orderitem_order", "payment_order")
+
+    @action(detail=False, methods=["post"])
+    @transaction.atomic
+    def checkout(self, request):
+        serializer = CheckoutSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+
+        cart = Cart.objects.select_for_update().filter(user=request.user).first()
+        if not cart or not cart.cartitem_cart.exists():
+            return Response({"detail": "Cart is empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+        address_id = serializer.validated_data["address_id"]
+        payment_method = serializer.validated_data["payment_method"]
+
+        subtotal = 0
+        total_discount = 0
+
+        cart_items = list(cart.cartitem_cart.select_for_update().select_related("store_item__product"))
+
+        for ci in cart_items:
+            store_item = StoreItem.objects.select_for_update().get(pk=ci.store_item.pk)
+            if ci.quantity > store_item.stock:
+                return Response(
+                    {"detail": f"Not enough stock for {store_item.product.name}. Available: {store_item.stock}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            unit_price = store_item.discount_price if store_item.discount_price and store_item.discount_price > 0 else store_item.price
+            subtotal += unit_price * ci.quantity
+
+        cart_discount = getattr(cart, "total_discount", 0) or 0
+        total_price = max(subtotal - cart_discount, 0)
+
+        order = Order.objects.create(
+            customer=request.user,
+            address_id=address_id,
+            total_price=total_price,
+            total_discount=cart_discount,
+            status=1 
+        )
+
+        for ci in cart_items:
+            store_item = StoreItem.objects.get(pk=ci.store_item.pk)
+            unit_price = store_item.discount_price if store_item.discount_price and store_item.discount_price > 0 else store_item.price
+
+            OrderItem.objects.create(
+                order=order,
+                store_item=store_item,
+                quantity=ci.quantity,
+                price=unit_price
+            )
+
+            store_item.stock -= ci.quantity
+            store_item.save(update_fields=["stock"])
+
+        payment = Payment.objects.create(
+            order=order,
+            amount=order.total_price,
+            fee=0,
+            status=1 
+        )
+
+        cart.cartitem_cart.all().delete()
+        cart.total_discount = 0
+        cart.save(update_fields=["total_discount"])
+
+        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=["get"])
+    def my_orders(self, request):
+        qs = self.get_queryset().filter(customer=request.user)
+        return Response(self.get_serializer(qs, many=True).data)
