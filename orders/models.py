@@ -12,8 +12,10 @@ class Cart(BaseModel):
     total_discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     def total_price(self):
-        return sum(item.total_price for item in self.cartitem_cart.all())
-    
+        subtotal = sum(item.total_price for item in self.cartitem_cart.all())
+        return max(subtotal - self.total_discount, 0)
+
+        
     def __str__(self):
         return f'Cart of {self.user.email}'
 
@@ -26,8 +28,9 @@ class CartItem(BaseModel):
 
     @property
     def total_price(self):
-        return self.quantity * self.store_item.price
-
+        price = self.store_item.discount_price if self.store_item.discount_price > 0 else self.store_item.price
+        return self.quantity * price
+    
     def __str__(self):
         return f'{self.store_item.product.name} x {self.quantity}'
 

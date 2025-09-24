@@ -2,7 +2,8 @@ from rest_framework import viewsets,permissions, status
 from .serializers import (
     CartSerializer,
     AddToCartSerializer,
-    UpdateCartQuantitySerializer
+    UpdateCartQuantitySerializer,
+    ApplyCartDiscountSerializer
 )
 from .models import Cart, CartItem
 from stores.models import StoreItem
@@ -32,17 +33,18 @@ class CartApiView(viewsets.GenericViewSet):
     def add_to_cart(self, request):
         serializer = AddToCartSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        
         cart = self.get_object()
         store_item_id = serializer.validated_data['store_item_id']
         quantity = serializer.validated_data['quantity']
 
         try:
-            store_item = StoreItem.objects.get(id=store_item_id)
+            store_item = StoreItem.objects.select_for_update().get(id=store_item_id)
         except StoreItem.DoesNotExist:
             return Response({'message': 'Store item not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         if store_item.stock <= 0:
-            return Response({'detail': 'This product is out of stock.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'This product is out of stock.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if quantity > store_item.stock:
             return Response(
@@ -55,7 +57,7 @@ class CartApiView(viewsets.GenericViewSet):
 
         if cart_item.quantity + quantity > store_item.stock:
             return Response(
-                {'detail': f'You already have {cart_item.quantity} in your cart. '
+                {'message': f'You already have {cart_item.quantity} in your cart. '
                         f'Only {store_item.stock} total available.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -73,6 +75,7 @@ class CartApiView(viewsets.GenericViewSet):
     def update_quantity(self, request):
         serializer = UpdateCartQuantitySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
         cart = self.get_object()
         cart_item_id = serializer.validated_data['cart_item_id']
         quantity = serializer.validated_data['quantity']
@@ -85,7 +88,7 @@ class CartApiView(viewsets.GenericViewSet):
 
         if quantity > store_item.stock:
             return Response(
-                {'detail': f'Only {store_item.stock} items available in stock.'},
+                {'message': f'Only {store_item.stock} items available in stock.'},
                 status=400,
             )
         
@@ -113,4 +116,16 @@ class CartApiView(viewsets.GenericViewSet):
     def clear_cart(self, request):
         cart = self.get_object()
         cart.cartitem_cart.all().delete()
-        return Response({'detail': 'Cart cleared.'}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'message': 'Cart cleared.'}, status=status.HTTP_204_NO_CONTENT)
+    
+
+    @action(detail=False, methods=['post'])
+    def apply_discount(self, request):
+        serializer = ApplyCartDiscountSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        cart = self.get_object()
+        cart.total_discount = serializer.validated_data['discount_value']
+        cart.save(update_fields=['total_discount'])
+
+        return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)

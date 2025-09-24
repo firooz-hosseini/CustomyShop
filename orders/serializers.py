@@ -32,16 +32,20 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(source='cartitem_cart', many=True, read_only=True)
+    subtotal = serializers.SerializerMethodField()
+    total_discount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     total_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Cart
-        fields = ['id', 'items', 'total_price']
+        fields = ['id', 'items', 'subtotal', 'total_discount', 'total_price']
 
+
+    def get_subtotal(self, obj):
+        return sum(item.total_price for item in obj.cartitem_cart.all())
 
     def get_total_price(self, obj):
-        return sum([item.total_price for item in obj.cartitem_cart.all()])
-    
+        return obj.total_price()
 
 class AddToCartSerializer(serializers.Serializer):
     store_item_id = serializers.IntegerField()
@@ -61,3 +65,7 @@ class UpdateCartQuantitySerializer(serializers.Serializer):
         if not CartItem.objects.filter(id=value).exists():
             raise serializers.ValidationError("CartItem with this ID does not exist.")
         return value
+    
+
+class ApplyCartDiscountSerializer(serializers.Serializer):
+    discount_value = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=0)
