@@ -110,6 +110,7 @@ class CartApiView(viewsets.GenericViewSet):
         else:
             cart_item.quantity = quantity
             cart_item.save()
+            cache.delete(f"cart:{request.user.id}")
         
         return Response(CartSerializer(cart).data)
     
@@ -122,12 +123,14 @@ class CartApiView(viewsets.GenericViewSet):
             return Response({'message': 'Cart item not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         cart_item.delete()
+        cache.delete(f"cart:{request.user.id}")
         return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['delete'])
     def clear_cart(self, request):
         cart = self.get_object()
         cart.cartitem_cart.all().delete()
+        cache.delete(f"cart:{request.user.id}")
         return Response({'message': 'Cart cleared.'}, status=status.HTTP_204_NO_CONTENT)
     
 
@@ -139,6 +142,7 @@ class CartApiView(viewsets.GenericViewSet):
         cart = self.get_object()
         cart.total_discount = serializer.validated_data['discount_value']
         cart.save(update_fields=['total_discount'])
+        cache.delete(f"cart:{request.user.id}")
 
         return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
     
@@ -216,6 +220,7 @@ class OrderViewSet(viewsets.GenericViewSet):
         cart.cartitem_cart.all().delete()
         cart.total_discount = 0
         cart.save(update_fields=['total_discount'])
+        cache.delete(f"orders:{request.user.id}")
 
         return Response(
             {
@@ -233,8 +238,19 @@ class OrderViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=['get'])
     def my_orders(self, request):
-        qs = self.get_queryset().filter(customer=request.user)
-        return Response(self.get_serializer(qs, many=True).data)
+        user_id = request.user.id
+        cache_key = f"orders:{user_id}"
+
+        cached_orders = cache.get(cache_key)
+        if cached_orders:
+            return Response(cached_orders)
+        
+        queryset = self.get_queryset().filter(customer=request.user)
+        serialized = self.get_serializer(queryset, many=True).data
+
+        cache.set(cache_key, serialized, timeout=300)
+
+        return Response(serialized)
     
 
 TEST_MERCHANT_ID = '00000000-0000-0000-0000-000000000000'
