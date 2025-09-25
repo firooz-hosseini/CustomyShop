@@ -36,10 +36,23 @@ class CartItem(BaseModel):
 
 
 class Order(BaseModel):
-    ORDER_STATUS = [(1,'Pending'),(2,'Processing'),(3,'Delivered'),(4,'Cancelled'),(5,'Failed')]
+    PENDING = 1
+    PROCESSING = 2
+    DELIVERED = 3
+    CANCELLED = 4
+    FAILED = 5
+
+    ORDER_STATUS = [
+        (PENDING, "Pending"),
+        (PROCESSING, "Processing"),
+        (DELIVERED, "Delivered"),
+        (CANCELLED, "Cancelled"),
+        (FAILED, "Failed"),
+    ]
+
     address = models.ForeignKey(Address, on_delete=models.CASCADE, related_name='order_customer')
     customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='order_address')
-    status = models.PositiveIntegerField(choices=ORDER_STATUS, default=1)
+    status = models.PositiveIntegerField(choices=ORDER_STATUS, default=PENDING)
     total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
@@ -62,12 +75,16 @@ class OrderItem(BaseModel):
 
 
 class Payment(BaseModel):
-    PAYMENT_STATUS = [(1,'Pending'), (2,'Success'), (3,'Failed')]
-    status = models.CharField(choices=PAYMENT_STATUS, default=1)
+    PENDING = 0
+    SUCCESS = 1
+    FAILED = 2
+
+    PAYMENT_STATUS = [(PENDING,'Pending'), (SUCCESS,'Success'), (FAILED,'Failed')]
+    status = models.PositiveSmallIntegerField(choices=PAYMENT_STATUS, default=PENDING)
     transaction_id = models.CharField(max_length=20, blank=True, null=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     fee = models.DecimalField(max_digits=12, decimal_places=2)
-    reference_id = models.CharField(max_length=20, blank=True, null=True)
+    reference_id = models.CharField(max_length=50, blank=True, null=True)
     card_pan = models.CharField(max_length=20, blank=True, null=True)
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='payment_order')
 
