@@ -12,6 +12,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import transaction
 import requests
+from django.core.cache import cache
 
 
 class CartApiView(viewsets.GenericViewSet):
@@ -22,8 +23,15 @@ class CartApiView(viewsets.GenericViewSet):
         return Cart.objects.filter(user=self.request.user)
     
     def get_object(self):
+        user_id = self.request.user.id
+        cache_key = f"cart:{user_id}"
+
+        cached_cart = cache.get(cache_key)
+        if cached_cart:
+            return cached_cart
+
         cart, _ = Cart.objects.get_or_create(user=self.request.user)
-        return cart
+        cache.set(cache_key, cart, timeout=300) 
     
     def list(self, request):
         cart = self.get_object()
@@ -71,6 +79,7 @@ class CartApiView(viewsets.GenericViewSet):
             cart_item.quantity += quantity
         
         cart_item.save()
+        cache.delete(f"cart:{request.user.id}")
         return Response(CartSerializer(cart).data, status=status.HTTP_201_CREATED)
     
     @action(detail=False, methods=['patch'])
