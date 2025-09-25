@@ -28,11 +28,13 @@ class CartApiView(viewsets.GenericViewSet):
 
         cached_cart = cache.get(cache_key)
         if cached_cart:
-            return cached_cart
+            return Cart.objects.get(id=cached_cart['id'])
 
         cart, _ = Cart.objects.get_or_create(user=self.request.user)
-        cache.set(cache_key, cart, timeout=300) 
-    
+        cache.set(cache_key, {'id': cart.id}, timeout=300) 
+        return cart
+        
+
     def list(self, request):
         cart = self.get_object()
         serializer = self.get_serializer(cart)
@@ -220,6 +222,7 @@ class OrderViewSet(viewsets.GenericViewSet):
         cart.cartitem_cart.all().delete()
         cart.total_discount = 0
         cart.save(update_fields=['total_discount'])
+        cache.delete(f"cart:{request.user.id}")
         cache.delete(f"orders:{request.user.id}")
 
         return Response(
