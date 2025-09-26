@@ -24,12 +24,15 @@ class CartApiView(viewsets.GenericViewSet):
     
     def get_object(self):
         user_id = self.request.user.id
-        cache_key = f"cart:{user_id}"
+        cache_key = f'cart:{user_id}'
 
         cached_cart = cache.get(cache_key)
         if cached_cart:
-            return Cart.objects.get(id=cached_cart['id'])
-
+            try:
+                return Cart.objects.only('id', 'user').get(id=cached_cart['id'])
+            except Cart.DoesNotExist:
+                cache.delete(cache_key)
+        
         cart, _ = Cart.objects.get_or_create(user=self.request.user)
         cache.set(cache_key, {'id': cart.id}, timeout=300) 
         return cart
@@ -81,7 +84,7 @@ class CartApiView(viewsets.GenericViewSet):
             cart_item.quantity += quantity
         
         cart_item.save()
-        cache.delete(f"cart:{request.user.id}")
+        cache.delete(f'cart:{request.user.id}')
         return Response(CartSerializer(cart).data, status=status.HTTP_201_CREATED)
     
     @action(detail=False, methods=['patch'])
@@ -112,7 +115,7 @@ class CartApiView(viewsets.GenericViewSet):
         else:
             cart_item.quantity = quantity
             cart_item.save()
-            cache.delete(f"cart:{request.user.id}")
+            cache.delete(f'cart:{request.user.id}')
         
         return Response(CartSerializer(cart).data)
     
@@ -125,14 +128,14 @@ class CartApiView(viewsets.GenericViewSet):
             return Response({'message': 'Cart item not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         cart_item.delete()
-        cache.delete(f"cart:{request.user.id}")
+        cache.delete(f'cart:{request.user.id}')
         return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['delete'])
     def clear_cart(self, request):
         cart = self.get_object()
         cart.cartitem_cart.all().delete()
-        cache.delete(f"cart:{request.user.id}")
+        cache.delete(f'cart:{request.user.id}')
         return Response({'message': 'Cart cleared.'}, status=status.HTTP_204_NO_CONTENT)
     
 
@@ -144,7 +147,7 @@ class CartApiView(viewsets.GenericViewSet):
         cart = self.get_object()
         cart.total_discount = serializer.validated_data['discount_value']
         cart.save(update_fields=['total_discount'])
-        cache.delete(f"cart:{request.user.id}")
+        cache.delete(f'cart:{request.user.id}')
 
         return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
     
@@ -222,9 +225,9 @@ class OrderViewSet(viewsets.GenericViewSet):
         cart.cartitem_cart.all().delete()
         cart.total_discount = 0
         cart.save(update_fields=['total_discount'])
-        cache.delete(f"cart:{request.user.id}")
-        cache.delete(f"orders:{request.user.id}")
-
+        cache.delete(f'cart:{request.user.id}')
+        cache.delete(f'orders:{request.user.id}')
+        
         return Response(
             {
                 'message': 'Checkout successful. Proceed to payment.',
@@ -242,7 +245,7 @@ class OrderViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=['get'])
     def my_orders(self, request):
         user_id = request.user.id
-        cache_key = f"orders:{user_id}"
+        cache_key = f'orders:{user_id}'
 
         cached_orders = cache.get(cache_key)
         if cached_orders:
@@ -290,25 +293,25 @@ class PaymentViewSet(viewsets.GenericViewSet):
         req_data = {
             'merchant_id': TEST_MERCHANT_ID,
             'amount': amount,
-            'callback_url': request.build_absolute_uri(f"/api/payments/{payment.pk}/verify/"),
+            'callback_url': request.build_absolute_uri(f'/api/payments/{payment.pk}/verify/'),
             'description': f'Order #{payment.order.id}',
         }
 
-        zarinpal_url = "https://sandbox.zarinpal.com/pg/v4/payment/request.json"
+        zarinpal_url = 'https://sandbox.zarinpal.com/pg/v4/payment/request.json'
         try:
             zarinpal_response = requests.post(zarinpal_url, json=req_data)
             response = zarinpal_response.json()
         except ValueError:
             return Response({'detail': 'Zarinpal did not return valid JSON', 'raw': zarinpal_response.text}, status=status.HTTP_502_BAD_GATEWAY)
 
-        if response.get("data") and response["data"].get("code") == 100:
-            authority = response["data"]["authority"]
+        if response.get('data') and response['data'].get('code') == 100:
+            authority = response['data']['authority']
             payment.reference_id = authority
             payment.save(update_fields=['reference_id'])
             return Response({
-                "payment_url": f"https://sandbox.zarinpal.com/pg/StartPay/{authority}",
-                "authority": authority,
-                "amount": amount,
+                'payment_url': f'https://sandbox.zarinpal.com/pg/StartPay/{authority}',
+                'authority': authority,
+                'amount': amount,
             })
 
         return Response({'detail': 'Payment request failed', 'zarinpal_response': response}, status=status.HTTP_400_BAD_REQUEST)
@@ -333,16 +336,16 @@ class PaymentViewSet(viewsets.GenericViewSet):
             'authority': payment.reference_id,
         }
 
-        verify_url = "https://sandbox.zarinpal.com/pg/v4/payment/verify.json"
+        verify_url = 'https://sandbox.zarinpal.com/pg/v4/payment/verify.json'
         try:
             verify_response = requests.post(verify_url, json=verify_data)
             response = verify_response.json()
         except ValueError:
             return Response({'detail': 'Zarinpal did not return valid JSON', 'raw': verify_response.text}, status=status.HTTP_502_BAD_GATEWAY)
 
-        if response.get("data") and response["data"].get("code") == 100:
+        if response.get('data') and response['data'].get('code') == 100:
             payment.status = Payment.SUCCESS
-            payment.transaction_id = response["data"]["ref_id"]
+            payment.transaction_id = response['data']['ref_id']
             payment.save(update_fields=['status', 'transaction_id'])
 
             order = payment.order
