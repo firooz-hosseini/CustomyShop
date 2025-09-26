@@ -12,11 +12,14 @@ click-didyoumean==0.3.1
 click-plugins==1.1.1.2
 click-repl==0.3.0
 coverage==7.10.7
+cron_descriptor==2.0.6
 Django==5.2.6
+django-celery-beat==2.8.1
 django-cors-headers==4.8.0
 django-filter==25.1
 django-redis==6.0.0
 django-storages==1.14.6
+django-timezone-field==7.1
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
 drf-spectacular==0.28.0
@@ -37,6 +40,7 @@ PyJWT==2.10.1
 pytest==8.4.2
 pytest-cov==7.0.0
 pytest-django==4.11.1
+python-crontab==3.3.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.1
 PyYAML==6.0.2
@@ -47,6 +51,7 @@ rpds-py==0.27.1
 s3transfer==0.14.0
 six==1.17.0
 sqlparse==0.5.3
+typing_extensions==4.15.0
 tzdata==2025.2
 uritemplate==4.2.0
 urllib3==2.5.0

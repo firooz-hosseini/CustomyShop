@@ -1,19 +1,13 @@
 from celery import shared_task
 from django.core.mail import send_mail
 from .models import Payment, Cart
-from django.utils import timezone
-from datetime import timedelta
 from collections import defaultdict
 import os
 
+
 @shared_task
 def send_verify_payment_reminders():
-    now = timezone.now()
-    pending_payments = Payment.objects.filter(
-        status=Payment.PENDING,
-        created_at__lte=now - timedelta(days=1)
-    ).select_related('order', 'order__customer')
-
+    pending_payments = Payment.objects.filter(status=Payment.PENDING).select_related('order', 'order__customer')
     reminders = defaultdict(list)
     for payment in pending_payments:
         user = payment.order.customer
@@ -21,10 +15,9 @@ def send_verify_payment_reminders():
 
     for user, payments in reminders.items():
         payment_texts = [f"- Order #{p.order.id} ({p.amount} USD)" for p in payments]
-        email_body = "You have pending payments:\n" + "\n".join(payment_texts)
         send_mail(
             subject="Reminder: Pending Payments",
-            message=email_body,
+            message="You have pending payments:\n" + "\n".join(payment_texts),
             from_email=os.getenv('EMAIL_HOST_USER', ''),
             recipient_list=[user.email],
         )
@@ -33,9 +26,9 @@ def send_verify_payment_reminders():
 @shared_task
 def send_weekly_cart_reminders():
 
-    carts = Cart.objects.filter(cartitem_cart__isnull=False).select_related('user').distinct()
+    carts_with_items = Cart.objects.filter(cartitem_cart__isnull=False).distinct().select_related('user')
 
-    for cart in carts:
+    for cart in carts_with_items:
         user = cart.user
         email_body = (
             "You have items in your cart that haven't been checked out yet. "
