@@ -1,6 +1,7 @@
 from rest_framework import viewsets,permissions, status
 from .serializers import (
     CartSerializer,
+    CartItemSerializer,
     AddToCartSerializer,
     UpdateCartQuantitySerializer,
     ApplyCartDiscountSerializer, 
@@ -41,6 +42,15 @@ class CartApiView(viewsets.GenericViewSet):
     def list(self, request):
         cart = self.get_object()
         serializer = self.get_serializer(cart)
+        return Response(serializer.data)
+    
+    def retrieve(self, request, pk=None):
+        cart = self.get_object()
+        try:
+            cart_item = cart.cartitem_cart.get(id=pk)
+        except CartItem.DoesNotExist:
+            return Response({'message': 'Cart item not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CartItemSerializer(cart_item)
         return Response(serializer.data)
 
 
