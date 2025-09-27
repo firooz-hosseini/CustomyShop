@@ -1,6 +1,5 @@
 from django.dispatch import Signal, receiver
-from django.core.mail import send_mail
-from django.conf import settings
+from .tasks import send_payment_success_email_task
 
 payment_verified = Signal()
 
@@ -10,7 +9,7 @@ def send_payment_success_email(sender, payment, **kwargs):
     order = payment.order
     subject = f'Payment Successful - Order #{order.id}'
     message = (
-        f'Hello {order.customer.username},\n\n'
+        f'Hello {order.customer.first_name or order.customer.email},\n\n'
         f'Your payment for Order #{order.id} was successful.\n'
         f'Transaction ID: {payment.transaction_id}\n'
         f'Amount: {payment.amount}\n\n'
@@ -18,10 +17,4 @@ def send_payment_success_email(sender, payment, **kwargs):
     )
     recipient = [order.customer.email]
 
-    send_mail(
-        subject,
-        message,
-        settings.DEFAULT_FROM_EMAIL,
-        recipient,
-        fail_silently=False,
-    )
+    send_payment_success_email_task.delay(subject, message, recipient)

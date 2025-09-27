@@ -23,6 +23,6 @@ def send_otp_email_task(email, otp_code):
         send_mail(
         subject='Your OTP Code',
         message=f'Your OTP code is: {otp_code}',
-        from_email='firo744@gmail.com',
+        from_email = settings.DEFAULT_FROM_EMAIL,
         recipient_list=[email],
     )

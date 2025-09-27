@@ -40,3 +40,14 @@ def send_weekly_cart_reminders():
             from_email=os.getenv('EMAIL_HOST_USER', ''),
             recipient_list=[user.email],
         )
+
+@shared_task
+def send_payment_success_email_task(subject, message, recipient_list):
+    send_mail(
+        subject,
+        message,
+        os.getenv('EMAIL_HOST_USER', ''),
+        recipient_list,
+        fail_silently=False,
+    )
+    
