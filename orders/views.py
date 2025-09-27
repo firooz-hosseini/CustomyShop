@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from django.db import transaction
 import requests
 from django.core.cache import cache
-
+from .signals import payment_verified
 
 class CartApiView(viewsets.GenericViewSet):
     serializer_class = CartSerializer
@@ -351,7 +351,9 @@ class PaymentViewSet(viewsets.GenericViewSet):
             order = payment.order
             order.status = Order.PROCESSING
             order.save(update_fields=['status'])
-
+            
+            payment_verified.send(sender=self.__class__, payment=payment)
+            
             return Response({'detail': 'Payment verified successfully', 'ref_id': payment.transaction_id})
 
         payment.status = Payment.FAILED
