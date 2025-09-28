@@ -340,6 +340,13 @@ class PaymentViewSet(viewsets.GenericViewSet):
         if not payment.reference_id:
             return Response({'detail': 'Payment not started.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        callback_status = request.query_params.get("Status")
+        if callback_status != "OK":
+            payment.status = Payment.FAILED
+            payment.save(update_fields=['status'])
+            return Response({'detail': 'Payment was cancelled by user or gateway.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        
         verify_data = {
             'merchant_id': TEST_MERCHANT_ID,
             'amount': int(payment.amount),
