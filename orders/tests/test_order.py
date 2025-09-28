@@ -65,3 +65,19 @@ class OrderTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("address_id", response.data)
+
+
+    def test_checkout_fails_if_stock_changed_before_checkout(self):
+        add_url = reverse("mycart-add-to-cart")
+        self.client.post(add_url, {"store_item_id": self.store_item.id, "quantity": 5}, format="json")
+
+        self.store_item.stock = 0
+        self.store_item.save()
+
+        checkout_url = reverse("orders-checkout")
+        data = {"address_id": self.address.id}
+        response = self.client.post(checkout_url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("detail", response.data)
+        self.assertIn("not enough stock", response.data["detail"].lower())
