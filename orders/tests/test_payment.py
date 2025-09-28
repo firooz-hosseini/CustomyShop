@@ -89,3 +89,28 @@ class PaymentTests(APITestCase):
 
         payment.refresh_from_db()
         self.assertEqual(payment.status, Payment.FAILED)
+
+
+    @patch("orders.views.requests.post")
+    def test_double_payment_verification_does_not_reprocess(self, mock_post):
+        mock_post.return_value.json.return_value = {"data": {"code": 100, "ref_id": "TESTREF"}}
+
+        payment = Payment.objects.create(
+            order=self.order,
+            amount=self.order.total_price,
+            reference_id="TESTAUTH",
+        )
+
+        verify_url = reverse("payments-verify", kwargs={"pk": payment.id})
+
+        first_response = self.client.get(verify_url, {"Status": "OK", "Authority": "TESTAUTH"})
+        self.assertEqual(first_response.status_code, status.HTTP_200_OK)
+
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, Payment.SUCCESS)
+
+        second_response = self.client.get(verify_url, {"Status": "OK", "Authority": "TESTAUTH"})
+        self.assertEqual(second_response.status_code, status.HTTP_409_CONFLICT)
+
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, Payment.SUCCESS) 
