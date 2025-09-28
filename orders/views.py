@@ -1,6 +1,7 @@
 from rest_framework import viewsets,permissions, status
 from .serializers import (
     CartSerializer,
+    CartItemSerializer,
     AddToCartSerializer,
     UpdateCartQuantitySerializer,
     ApplyCartDiscountSerializer, 
@@ -41,6 +42,15 @@ class CartApiView(viewsets.GenericViewSet):
     def list(self, request):
         cart = self.get_object()
         serializer = self.get_serializer(cart)
+        return Response(serializer.data)
+    
+    def retrieve(self, request, pk=None):
+        cart = self.get_object()
+        try:
+            cart_item = cart.cartitem_cart.get(id=pk)
+        except CartItem.DoesNotExist:
+            return Response({'message': 'Cart item not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CartItemSerializer(cart_item)
         return Response(serializer.data)
 
 
@@ -330,6 +340,13 @@ class PaymentViewSet(viewsets.GenericViewSet):
         if not payment.reference_id:
             return Response({'detail': 'Payment not started.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        callback_status = request.query_params.get("Status")
+        if callback_status != "OK":
+            payment.status = Payment.FAILED
+            payment.save(update_fields=['status'])
+            return Response({'detail': 'Payment was cancelled by user or gateway.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        
         verify_data = {
             'merchant_id': TEST_MERCHANT_ID,
             'amount': int(payment.amount),

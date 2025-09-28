@@ -83,7 +83,7 @@ class Payment(BaseModel):
     status = models.PositiveSmallIntegerField(choices=PAYMENT_STATUS, default=PENDING)
     transaction_id = models.CharField(max_length=20, blank=True, null=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    fee = models.DecimalField(max_digits=12, decimal_places=2)
+    fee = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     reference_id = models.CharField(max_length=50, blank=True, null=True)
     card_pan = models.CharField(max_length=20, blank=True, null=True)
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='payment_order')

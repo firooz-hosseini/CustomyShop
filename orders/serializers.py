@@ -74,7 +74,6 @@ class ApplyCartDiscountSerializer(serializers.Serializer):
 
 class CheckoutSerializer(serializers.Serializer):
     address_id = serializers.IntegerField()
-    payment_method = serializers.ChoiceField(choices=[("online","Online"), ("cod","COD")], default="online")
 
     def validate_address_id(self, value):
         user = self.context["request"].user
