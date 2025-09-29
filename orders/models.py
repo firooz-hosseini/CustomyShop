@@ -50,8 +50,9 @@ class Order(BaseModel):
         (FAILED, "Failed"),
     ]
 
-    address = models.ForeignKey(Address, on_delete=models.CASCADE, related_name='order_customer')
-    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='order_address')
+    address = models.ForeignKey(Address, on_delete=models.CASCADE, related_name='order_address')
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='order_customer')
+    
     status = models.PositiveIntegerField(choices=ORDER_STATUS, default=PENDING)
     total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)

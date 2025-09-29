@@ -30,3 +30,4 @@ venv/
 
 
 /frontend
+ruff.toml
