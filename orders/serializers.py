@@ -1,3 +1,4 @@
+from django.forms.models import model_to_dict
 from rest_framework import serializers
 
 from accounts.models import Address
@@ -5,7 +6,7 @@ from products.models import ProductImage
 from stores.models import StoreItem
 
 from .models import Cart, CartItem, Order, OrderItem
-from accounts.serializers import UserAddressSerializer
+
 
 class ImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -119,17 +120,23 @@ class OrderSerializer(serializers.ModelSerializer):
     order_items = OrderItemSerializer(
         source='orderitem_order', many=True, read_only=True
     )
-    user_address = UserAddressSerializer(source='address', read_only=True)
+    user_address = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = [
             'id',
             'customer',
-            'address',
             'user_address',
             'status',
             'total_price',
             'total_discount',
             'order_items',
         ]
+
+    def get_user_address(self, obj):
+        if obj.address:
+            return model_to_dict(
+                obj.address, exclude=['user', 'store', 'is_deleted', 'deleted_at']
+            )
+        return None
