@@ -1,0 +1,19 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block extrastyle %}
+<link rel="stylesheet" type="text/css" href="{% static 'admin/css/custom.css' %}">
+{% endblock %}
+
+{% block branding %}
+<a href="{% url 'admin:index' %}" class="logo">
+    <img src="{% static 'admin/images/logo-type.svg' %}" alt="Logo" style="height:40px;">
+    CustomyShop Admin
+</a>
+{% endblock %}
+
+{% block footer %}
+<div id="footer">
+    CustomyShop © 2025
+</div>
+{% endblock %}
