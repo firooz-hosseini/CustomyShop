@@ -10,6 +10,15 @@ class ProductImageInline(admin.TabularInline):
     show_change_link = True
 
 
+@admin.action(description="Enable selected products")
+def enable_products(modeladmin, request, queryset):
+    queryset.update(is_active=True)
+
+
+@admin.action(description="Disable selected products")
+def disable_products(modeladmin, request, queryset):
+    queryset.update(is_active=False)
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'category', 'is_active')
@@ -17,6 +26,7 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ('id', 'name',)
     ordering = ('id', 'name',)
     inlines = [ProductImageInline]
+    actions = [enable_products, disable_products]
 
 
 @admin.register(Category)
