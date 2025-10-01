@@ -25,15 +25,15 @@ class StoreItemAdmin(admin.ModelAdmin):
     list_display = ('id', 'product', 'store', 'stock', 'price', 'discount_price', 'is_active')
     list_filter = ('id', 'store', 'is_active')
     search_fields = ('id', 'product__name', 'store__name')
-    ordering = ('store', 'product',)
+    ordering = ('id', 'store', 'product',)
 
 
 @admin.register(SellerRequest)
 class SellerRequestAdmin(admin.ModelAdmin):
-    list_display = ('user', 'status', 'created_at', 'reviewed_at')
-    list_filter = ('status',)
-    search_fields = ('user__email',)
-    ordering = ('-reviewed_at',)
+    list_display = ('id', 'user', 'status', 'created_at', 'reviewed_at')
+    list_filter = ('id', 'status',)
+    search_fields = ('id', 'user__email',)
+    ordering = ('id', '-reviewed_at',)
 
     actions = ['approve_request', 'reject_request']
 
