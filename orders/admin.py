@@ -34,6 +34,19 @@ class OrderItemInline(admin.TabularInline):
     show_change_link = True
 
 
+@admin.action(description="Approve selected orders (Processing)")
+def make_processing(modeladmin, request, queryset):
+    queryset.update(status=Order.PROCESSING)
+
+@admin.action(description="Cancel selected orders")
+def make_cancelled(modeladmin, request, queryset):
+    queryset.update(status=Order.CANCELLED)
+
+@admin.action(description="Turn selected orders to pending")
+def make_pending(modeladmin, request, queryset):
+    queryset.update(status=Order.PENDING)
+
+    
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('id', 'customer', 'status', 'total_price', 'total_discount')
@@ -41,6 +54,7 @@ class OrderAdmin(admin.ModelAdmin):
     search_fields = ('id', 'customer__email', 'address__street')
     ordering = ('-id', '-created_at',)
     inlines = [OrderItemInline]
+    actions = [make_processing, make_cancelled, make_pending]
 
 
 @admin.register(OrderItem)
@@ -56,5 +70,6 @@ class PaymentAdmin(admin.ModelAdmin):
     list_filter = ('id', 'status',)
     search_fields = ('id', 'order__id', 'transaction_id', 'reference_id')
     ordering = ('-id', '-created_at',)
+
 
 
