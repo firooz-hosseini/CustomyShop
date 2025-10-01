@@ -42,9 +42,13 @@ def make_processing(modeladmin, request, queryset):
 def make_cancelled(modeladmin, request, queryset):
     queryset.update(status=Order.CANCELLED)
 
-@admin.action(description="Turn selected orders to pending")
+@admin.action(description="Mark selected orders as pending")
 def make_pending(modeladmin, request, queryset):
     queryset.update(status=Order.PENDING)
+
+@admin.action(description="Mark selected orders as delivered")
+def make_delivered(modeladmin, request, queryset):
+    queryset.update(status=Order.DELIVERED)
 
     
 @admin.register(Order)
@@ -64,12 +68,24 @@ class OrderItemAdmin(admin.ModelAdmin):
     ordering = ('-id', '-created_at',)
 
 
+@admin.action(description="Mark selected payments as Successful")
+def mark_payments_success(modeladmin, request, queryset):
+    queryset.update(status=Payment.SUCCESS)
+
+@admin.action(description="Mark selected payments as Failed")
+def mark_payments_failed(modeladmin, request, queryset):
+    queryset.update(status=Payment.FAILED)
+
+@admin.action(description="Mark selected payments as Pending")
+def mark_payments_pending(modeladmin, request, queryset):
+    queryset.update(status=Payment.PENDING)
+
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
     list_display = ('id', 'order', 'status', 'amount', 'transaction_id', 'reference_id', 'card_pan')
     list_filter = ('id', 'status',)
     search_fields = ('id', 'order__id', 'transaction_id', 'reference_id')
     ordering = ('-id', '-created_at',)
-
+    actions = [mark_payments_success, mark_payments_failed, mark_payments_pending]
 
 
