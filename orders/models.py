@@ -13,7 +13,7 @@ class Cart(BaseModel):
 
     def total_price(self):
         subtotal = sum(item.total_price for item in self.cartitem_cart.all())
-        return max(subtotal - self.total_discount, 0)
+        return max(subtotal - (self.total_discount or 0), 0)
 
         
     def __str__(self):
@@ -28,8 +28,10 @@ class CartItem(BaseModel):
 
     @property
     def total_price(self):
-        price = self.store_item.discount_price if self.store_item.discount_price > 0 else self.store_item.price
-        return self.quantity * price
+        if not self.store_item:
+            return 0
+        price = self.store_item.discount_price if (self.store_item.discount_price and self.store_item.discount_price > 0) else (self.store_item.price or 0)
+        return (self.quantity or 0) * price
     
     def __str__(self):
         return f'{self.store_item.product.name} x {self.quantity}'
@@ -69,7 +71,7 @@ class OrderItem(BaseModel):
 
     @property
     def total_price(self):
-        return self.price * self.quantity
+        return (self.price or 0) * (self.quantity or 0)
 
     def __str__(self):
         return f'{self.order.id} - {self.store_item.product.name}'
@@ -89,5 +91,9 @@ class Payment(BaseModel):
     card_pan = models.CharField(max_length=20, blank=True, null=True)
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='payment_order')
 
+    @property
+    def net_amount(self):
+        return max((self.amount or 0) - (self.fee or 0), 0)
+    
     def __str__(self):
         return f'Payment for order #{self.order.id} - {self.get_status_display()}'
