@@ -18,7 +18,16 @@ class StoreAdmin(admin.ModelAdmin):
     search_fields = ('id', 'name', 'seller__email')
     ordering = ('-id', 'name',)
     inlines = [StoreItemInline]
+    
 
+@admin.action(description="Enable selected store items")
+def enable_store_items(modeladmin, request, queryset):
+    queryset.update(is_active=True)
+
+
+@admin.action(description="Disable selected store items")
+def disable_store_items(modeladmin, request, queryset):
+    queryset.update(is_active=False)
 
 @admin.register(StoreItem)
 class StoreItemAdmin(admin.ModelAdmin):
@@ -26,7 +35,7 @@ class StoreItemAdmin(admin.ModelAdmin):
     list_filter = ('id', 'store', 'is_active')
     search_fields = ('id', 'product__name', 'store__name')
     ordering = ('id', 'store', 'product',)
-
+    actions = [enable_store_items, disable_store_items]
 
 @admin.register(SellerRequest)
 class SellerRequestAdmin(admin.ModelAdmin):
