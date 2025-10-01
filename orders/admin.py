@@ -40,7 +40,14 @@ def make_processing(modeladmin, request, queryset):
 
 @admin.action(description="Cancel selected orders")
 def make_cancelled(modeladmin, request, queryset):
-    queryset.update(status=Order.CANCELLED)
+    for order in queryset:
+        if order.status != Order.CANCELLED:
+            order.status = Order.CANCELLED
+            order.save()
+            for item in order.orderitem_order.all():
+                item.store_item.stock += item.quantity
+                item.store_item.save()
+    modeladmin.message_user(request, "Selected orders have been cancelled and stock restored.")
 
 @admin.action(description="Mark selected orders as pending")
 def make_pending(modeladmin, request, queryset):
@@ -74,7 +81,19 @@ def mark_payments_success(modeladmin, request, queryset):
 
 @admin.action(description="Mark selected payments as Failed")
 def mark_payments_failed(modeladmin, request, queryset):
-    queryset.update(status=Payment.FAILED)
+    for payment in queryset:
+        payment.status = Payment.FAILED
+        payment.save()
+
+        order = payment.order
+        if order.status != Order.CANCELLED:
+            order.status = Order.CANCELLED
+            order.save()
+
+            for item in order.orderitem_order.all():
+                item.store_item.stock += item.quantity
+                item.store_item.save()
+    modeladmin.message_user(request, "Selected payments failed; orders cancelled and stock restored.")
 
 @admin.action(description="Mark selected payments as Pending")
 def mark_payments_pending(modeladmin, request, queryset):
