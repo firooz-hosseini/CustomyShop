@@ -23,6 +23,7 @@ django-timezone-field==7.1
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
 drf-spectacular==0.28.0
+drf-spectacular-sidecar==2025.10.1
 idna==3.10
 inflection==0.5.1
 iniconfig==2.1.0
