@@ -12,9 +12,10 @@ from .models import Cart, CartItem, Order, OrderItem
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Product Image Example',
-            summary='Image object for a product',
-            value={'id': 1, 'image': 'http://example.com/media/products/product1.jpg'},
+            'Product Image Response Example',
+            summary='Product image object',
+            value={'id': 1, 'image': 'http://example.com/media/products/1.png'},
+            response_only=True,
         )
     ]
 )
@@ -27,22 +28,29 @@ class ImageSerializer(serializers.ModelSerializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Cart Item Example',
-            summary="An item inside the user's cart",
+            'CartItem Request Example',
+            summary='Add item to cart',
+            value={'store_item_id': 1, 'quantity': 2},
+            request_only=True,
+        ),
+        OpenApiExample(
+            'CartItem Response Example',
+            summary='Cart item response',
             value={
-                'id': 5,
-                'store_item_id': 10,
-                'product_id': 2,
-                'product_name': 'iPhone 15',
-                'product_price': '499.99',
+                'id': 1,
+                'store_item_id': 1,
+                'product_id': 10,
+                'product_name': 'Sample Product',
+                'product_price': '100.00',
                 'quantity': 2,
                 'product_category': 'Electronics',
                 'product_image': [
-                    {'id': 1, 'image': 'http://example.com/media/products/product1.jpg'}
+                    {'id': 1, 'image': 'http://example.com/media/products/1.png'}
                 ],
-                'total_price': '999.98',
+                'total_price': '200.00',
             },
-        )
+            response_only=True,
+        ),
     ]
 )
 class CartItemSerializer(serializers.ModelSerializer):
@@ -80,32 +88,33 @@ class CartItemSerializer(serializers.ModelSerializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Cart Example',
-            summary="User's shopping cart",
+            'Cart Response Example',
+            summary='Full cart object with items',
             value={
                 'id': 1,
                 'items': [
                     {
-                        'id': 5,
-                        'store_item_id': 10,
-                        'product_id': 2,
-                        'product_name': 'iPhone 15',
-                        'product_price': '499.99',
+                        'id': 1,
+                        'store_item_id': 1,
+                        'product_id': 10,
+                        'product_name': 'Sample Product',
+                        'product_price': '100.00',
                         'quantity': 2,
                         'product_category': 'Electronics',
                         'product_image': [
                             {
                                 'id': 1,
-                                'image': 'http://example.com/media/products/product1.jpg',
+                                'image': 'http://example.com/media/products/1.png',
                             }
                         ],
-                        'total_price': '999.98',
+                        'total_price': '200.00',
                     }
                 ],
-                'subtotal': '999.98',
-                'total_discount': '50.00',
-                'total_price': '949.98',
+                'subtotal': '200.00',
+                'total_discount': '20.00',
+                'total_price': '180.00',
             },
+            response_only=True,
         )
     ]
 )
@@ -131,9 +140,10 @@ class CartSerializer(serializers.ModelSerializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Add to Cart Example',
-            summary='Request to add an item to the cart',
-            value={'store_item_id': 10, 'quantity': 2},
+            'AddToCart Request Example',
+            summary='Add a store item to cart',
+            value={'store_item_id': 1, 'quantity': 2},
+            request_only=True,
         )
     ]
 )
@@ -150,9 +160,10 @@ class AddToCartSerializer(serializers.Serializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Update Cart Quantity Example',
-            summary='Update quantity of a cart item',
-            value={'cart_item_id': 5, 'quantity': 3},
+            'UpdateCartQuantity Request Example',
+            summary='Update quantity of cart item',
+            value={'cart_item_id': 1, 'quantity': 3},
+            request_only=True,
         )
     ]
 )
@@ -169,9 +180,10 @@ class UpdateCartQuantitySerializer(serializers.Serializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Apply Discount Example',
-            summary='Apply discount to the cart',
-            value={'discount_value': '50.00'},
+            'ApplyCartDiscount Request Example',
+            summary='Apply a discount to the cart',
+            value={'discount_value': '20.00'},
+            request_only=True,
         )
     ]
 )
@@ -184,7 +196,10 @@ class ApplyCartDiscountSerializer(serializers.Serializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Checkout Example', summary='Checkout request', value={'address_id': 3}
+            'Checkout Request Example',
+            summary='Checkout cart by providing address ID',
+            value={'address_id': 1},
+            request_only=True,
         )
     ]
 )
@@ -201,16 +216,17 @@ class CheckoutSerializer(serializers.Serializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Order Item Example',
-            summary='An item in an order',
+            'OrderItem Response Example',
+            summary='Order item details',
             value={
                 'id': 1,
-                'store_item': 10,
-                'product_name': 'iPhone 15',
-                'price': '499.99',
+                'store_item': 1,
+                'product_name': 'Sample Product',
+                'price': '100.00',
                 'quantity': 2,
-                'total_price': '999.98',
+                'total_price': '200.00',
             },
+            response_only=True,
         )
     ]
 )
@@ -232,34 +248,35 @@ class OrderItemSerializer(serializers.ModelSerializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Order Example',
-            summary='User order',
+            'Order Response Example',
+            summary='Full order details',
             value={
                 'id': 1,
-                'customer': 5,
+                'customer': 10,
                 'user_address': {
-                    'id': 3,
+                    'id': 1,
                     'label': 'Home',
-                    'address_line_1': '123 Market Street',
-                    'city': 'Tehran',
-                    'state': 'Tehran',
-                    'country': 'Iran',
-                    'postal_code': '1234567890',
+                    'address_line_1': '123 Main Street',
+                    'city': 'New York',
+                    'state': 'NY',
+                    'country': 'USA',
+                    'postal_code': '10001',
                 },
-                'status': 'pending',
-                'total_price': '949.98',
-                'total_discount': '50.00',
+                'status': 'PENDING',
+                'total_price': '180.00',
+                'total_discount': '20.00',
                 'order_items': [
                     {
                         'id': 1,
-                        'store_item': 10,
-                        'product_name': 'iPhone 15',
-                        'price': '499.99',
+                        'store_item': 1,
+                        'product_name': 'Sample Product',
+                        'price': '100.00',
                         'quantity': 2,
-                        'total_price': '999.98',
+                        'total_price': '200.00',
                     }
                 ],
             },
+            response_only=True,
         )
     ]
 )
