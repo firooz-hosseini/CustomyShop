@@ -13,13 +13,20 @@ from .models import Address, CustomUser
             summary='Request OTP for a new user',
             description='User submits email, password, and optional info to get an OTP.',
             value={
-                'email': 'john.doe@example.com',
+                'email': 'firo74@example.com',
                 'password': 'Password123',
-                'phone': '+1234567890',
-                'first_name': 'John',
-                'last_name': 'Doe',
+                'phone': '09174116470',
+                'first_name': 'Firooz',
+                'last_name': 'Hosseini',
             },
-        )
+            request_only=True,
+        ),
+        OpenApiExample(
+            'Request OTP Response Example',
+            summary='Response after requesting OTP',
+            value={'message': 'OTP has been sent to your email'},
+            response_only=True,
+        ),
     ]
 )
 class RequestOtpSerializer(serializers.ModelSerializer):
@@ -50,11 +57,21 @@ class RequestOtpSerializer(serializers.ModelSerializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Verify OTP Example',
+            'Verify OTP Request Example',
             summary='Verify OTP code for registration',
             description='User submits email and OTP code to verify account and get JWT tokens.',
-            value={'email': 'john.doe@example.com', 'otp_code': '123456'},
-        )
+            value={'email': 'firo74@example.com', 'otp_code': '123456'},
+            request_only=True,
+        ),
+        OpenApiExample(
+            'Verify OTP Response Example',
+            summary='Response after verifying OTP',
+            value={
+                'access': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...',
+                'refresh': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...',
+            },
+            response_only=True,
+        ),
     ]
 )
 class VerifyOtpSerializer(serializers.Serializer):
@@ -70,11 +87,20 @@ class VerifyOtpSerializer(serializers.Serializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Login Example',
+            'Login Request Example',
             summary='User login with email and password',
-            description='Returns access and refresh JWT tokens on success.',
-            value={'email': 'john.doe@example.com', 'password': 'Password123'},
-        )
+            value={'email': 'firooz@example.com', 'password': 'Password123'},
+            request_only=True,
+        ),
+        OpenApiExample(
+            'Login Response Example',
+            summary='Response after login',
+            value={
+                'access': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...',
+                'refresh': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...',
+            },
+            response_only=True,
+        ),
     ]
 )
 class LoginSerializer(serializers.Serializer):
@@ -85,11 +111,17 @@ class LoginSerializer(serializers.Serializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Logout Example',
+            'Logout Request Example',
             summary='Logout using refresh token',
-            description='Invalidate refresh token to logout from this device.',
             value={'refresh_token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'},
-        )
+            request_only=True,
+        ),
+        OpenApiExample(
+            'Logout Response Example',
+            summary='Response after logout',
+            value={'message': 'Successfully logged out from this device'},
+            response_only=True,
+        ),
     ]
 )
 class LogoutSerializer(serializers.Serializer):
@@ -99,16 +131,16 @@ class LogoutSerializer(serializers.Serializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Profile Example',
+            'Profile Response Example',
             summary='Retrieve or update user profile',
-            description='Returns user info including email, phone, names, and profile image.',
             value={
-                'email': 'john.doe@example.com',
-                'first_name': 'John',
-                'last_name': 'Doe',
-                'phone': '+1234567890',
-                'image': 'http://example.com/media/profile/john.png',
+                'email': 'firooz@example.com',
+                'first_name': 'Firooz',
+                'last_name': 'Hosseini',
+                'phone': '09174116470',
+                'image': 'http://example.com/media/profile/firooz.png',
             },
+            response_only=True,
         )
     ]
 )
@@ -121,9 +153,23 @@ class ProfileSerializer(serializers.ModelSerializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'User Address Example',
-            summary='User address object',
-            description='Used for retrieving, creating, or updating user addresses.',
+            'User Address Request Example',
+            summary='Create or update user address',
+            value={
+                'label': 'Home',
+                'address_line_1': '123 Main Street',
+                'address_line_2': 'Apt 4B',
+                'city': 'New York',
+                'state': 'NY',
+                'country': 'USA',
+                'postal_code': '10001',
+                'is_default': True,
+            },
+            request_only=True,
+        ),
+        OpenApiExample(
+            'User Address Response Example',
+            summary='Response with user address info',
             value={
                 'id': 1,
                 'user': 10,
@@ -137,7 +183,8 @@ class ProfileSerializer(serializers.ModelSerializer):
                 'postal_code': '10001',
                 'is_default': True,
             },
-        )
+            response_only=True,
+        ),
     ]
 )
 class UserAddressSerializer(serializers.ModelSerializer):
