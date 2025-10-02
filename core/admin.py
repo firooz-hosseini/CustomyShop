@@ -1,3 +1,5 @@
 from django.contrib import admin
 
-# Register your models here.
+admin.site.site_header = "CustomyShop Admin"  
+admin.site.site_title = "CustomyShop Portal"  
+admin.site.index_title = "Dashboard"  
