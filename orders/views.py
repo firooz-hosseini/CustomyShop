@@ -1,20 +1,24 @@
-from rest_framework import viewsets,permissions, status
-from .serializers import (
-    CartSerializer,
-    CartItemSerializer,
-    AddToCartSerializer,
-    UpdateCartQuantitySerializer,
-    ApplyCartDiscountSerializer, 
-    OrderSerializer, CheckoutSerializer
-)
-from .models import Cart, CartItem, Order, OrderItem, Payment
-from stores.models import StoreItem
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from django.db import transaction
 import requests
 from django.core.cache import cache
+from django.db import transaction
+from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+from stores.models import StoreItem
+
+from .models import Cart, CartItem, Order, OrderItem, Payment
+from .serializers import (
+    AddToCartSerializer,
+    ApplyCartDiscountSerializer,
+    CartItemSerializer,
+    CartSerializer,
+    CheckoutSerializer,
+    OrderSerializer,
+    UpdateCartQuantitySerializer,
+)
 from .signals import payment_verified
+
 
 class CartApiView(viewsets.GenericViewSet):
     serializer_class = CartSerializer
@@ -22,7 +26,7 @@ class CartApiView(viewsets.GenericViewSet):
 
     def get_queryset(self):
         return Cart.objects.filter(user=self.request.user)
-    
+
     def get_object(self):
         user_id = self.request.user.id
         cache_key = f'cart:{user_id}'
@@ -33,33 +37,33 @@ class CartApiView(viewsets.GenericViewSet):
                 return Cart.objects.only('id', 'user').get(id=cached_cart['id'])
             except Cart.DoesNotExist:
                 cache.delete(cache_key)
-        
+
         cart, _ = Cart.objects.get_or_create(user=self.request.user)
-        cache.set(cache_key, {'id': cart.id}, timeout=300) 
+        cache.set(cache_key, {'id': cart.id}, timeout=300)
         return cart
-        
 
     def list(self, request):
         cart = self.get_object()
         serializer = self.get_serializer(cart)
         return Response(serializer.data)
-    
+
     def retrieve(self, request, pk=None):
         cart = self.get_object()
         try:
             cart_item = cart.cartitem_cart.get(id=pk)
         except CartItem.DoesNotExist:
-            return Response({'message': 'Cart item not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {'message': 'Cart item not found.'}, status=status.HTTP_404_NOT_FOUND
+            )
         serializer = CartItemSerializer(cart_item)
         return Response(serializer.data)
-
 
     @action(detail=False, methods=['post'])
     @transaction.atomic
     def add_to_cart(self, request):
         serializer = AddToCartSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         cart = self.get_object()
         store_item_id = serializer.validated_data['store_item_id']
         quantity = serializer.validated_data['quantity']
@@ -67,36 +71,44 @@ class CartApiView(viewsets.GenericViewSet):
         try:
             store_item = StoreItem.objects.select_for_update().get(id=store_item_id)
         except StoreItem.DoesNotExist:
-            return Response({'message': 'Store item not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {'message': 'Store item not found.'}, status=status.HTTP_404_NOT_FOUND
+            )
 
         if store_item.stock <= 0:
-            return Response({'message': 'This product is out of stock.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'message': 'This product is out of stock.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if quantity > store_item.stock:
             return Response(
-                {'message': f'Only {store_item.stock} items available in stock.'}, 
-                status=status.HTTP_400_BAD_REQUEST
+                {'message': f'Only {store_item.stock} items available in stock.'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
 
-        cart_item, created = CartItem.objects.get_or_create(cart=cart, store_item=store_item)
+        cart_item, created = CartItem.objects.get_or_create(
+            cart=cart, store_item=store_item
+        )
 
         if cart_item.quantity + quantity > store_item.stock:
             return Response(
-                {'message': f'You already have {cart_item.quantity} in your cart. '
-                        f'Only {store_item.stock} total available.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {
+                    'message': f'You already have {cart_item.quantity} in your cart. '
+                    f'Only {store_item.stock} total available.'
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
-    
+
         if created:
             cart_item.quantity = quantity
         else:
             cart_item.quantity += quantity
-        
+
         cart_item.save()
         cache.delete(f'cart:{request.user.id}')
         return Response(CartSerializer(cart).data, status=status.HTTP_201_CREATED)
-    
+
     @action(detail=False, methods=['patch'])
     @transaction.atomic
     def update_quantity(self, request):
@@ -110,32 +122,38 @@ class CartApiView(viewsets.GenericViewSet):
         cart_item = cart.cartitem_cart.filter(id=cart_item_id).first()
 
         if not cart_item:
-            return Response({'message': 'Cart item not found.'}, status=status.HTTP_404_NOT_FOUND)
-        store_item = StoreItem.objects.select_for_update().get(id=cart_item.store_item.id)
+            return Response(
+                {'message': 'Cart item not found.'}, status=status.HTTP_404_NOT_FOUND
+            )
+        store_item = StoreItem.objects.select_for_update().get(
+            id=cart_item.store_item.id
+        )
 
         if quantity > store_item.stock:
             return Response(
                 {'message': f'Only {store_item.stock} items available in stock.'},
                 status=400,
             )
-        
-        if quantity ==0:
+
+        if quantity == 0:
             cart_item.delete()
-            
+
         else:
             cart_item.quantity = quantity
             cart_item.save()
             cache.delete(f'cart:{request.user.id}')
-        
+
         return Response(CartSerializer(cart).data)
-    
+
     @action(detail=True, methods=['delete'])
     def remove_item(self, request, pk=None):
         cart = self.get_object()
         try:
             cart_item = cart.cartitem_cart.get(id=pk)
         except CartItem.DoesNotExist:
-            return Response({'message': 'Cart item not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {'message': 'Cart item not found.'}, status=status.HTTP_404_NOT_FOUND
+            )
 
         cart_item.delete()
         cache.delete(f'cart:{request.user.id}')
@@ -147,7 +165,6 @@ class CartApiView(viewsets.GenericViewSet):
         cart.cartitem_cart.all().delete()
         cache.delete(f'cart:{request.user.id}')
         return Response({'message': 'Cart cleared.'}, status=status.HTTP_204_NO_CONTENT)
-    
 
     @action(detail=False, methods=['post'])
     def apply_discount(self, request):
@@ -160,7 +177,6 @@ class CartApiView(viewsets.GenericViewSet):
         cache.delete(f'cart:{request.user.id}')
 
         return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
-    
 
 
 class OrderViewSet(viewsets.GenericViewSet):
@@ -168,7 +184,9 @@ class OrderViewSet(viewsets.GenericViewSet):
     serializer_class = OrderSerializer
 
     def get_queryset(self):
-        return Order.objects.filter(customer=self.request.user).prefetch_related('orderitem_order', 'payment_order')
+        return Order.objects.filter(customer=self.request.user).prefetch_related(
+            'orderitem_order', 'payment_order'
+        )
 
     @action(detail=False, methods=['post'])
     @transaction.atomic
@@ -178,12 +196,15 @@ class OrderViewSet(viewsets.GenericViewSet):
 
         cart = Cart.objects.select_for_update().filter(user=request.user).first()
         if not cart or not cart.cartitem_cart.exists():
-            return Response({'detail': 'Cart is empty.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'detail': 'Cart is empty.'}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         address_id = serializer.validated_data['address_id']
         if not address_id:
-            return Response({'detail': 'Address is required.'}, status=status.HTTP_400_BAD_REQUEST)
-
+            return Response(
+                {'detail': 'Address is required.'}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         cart_items = list(
             cart.cartitem_cart.select_for_update().select_related('store_item__product')
@@ -194,10 +215,16 @@ class OrderViewSet(viewsets.GenericViewSet):
             store_item = item.store_item
             if item.quantity > store_item.stock:
                 return Response(
-                    {'detail': f'Not enough stock for {store_item.product.name}. Available: {store_item.stock}'},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {
+                        'detail': f'Not enough stock for {store_item.product.name}. Available: {store_item.stock}'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
-            unit_price = store_item.discount_price if store_item.discount_price and store_item.discount_price > 0 else store_item.price
+            unit_price = (
+                store_item.discount_price
+                if store_item.discount_price and store_item.discount_price > 0
+                else store_item.price
+            )
             subtotal += unit_price * item.quantity
 
         cart_discount = getattr(cart, 'total_discount', 0) or 0
@@ -208,28 +235,29 @@ class OrderViewSet(viewsets.GenericViewSet):
             address_id=address_id,
             total_price=total_price,
             total_discount=cart_discount,
-            status=Order.PENDING
+            status=Order.PENDING,
         )
 
         for item in cart_items:
             store_item = item.store_item
-            unit_price = store_item.discount_price if store_item.discount_price and store_item.discount_price > 0 else store_item.price
+            unit_price = (
+                store_item.discount_price
+                if store_item.discount_price and store_item.discount_price > 0
+                else store_item.price
+            )
 
             OrderItem.objects.create(
                 order=order,
                 store_item=store_item,
                 quantity=item.quantity,
-                price=unit_price
+                price=unit_price,
             )
 
             store_item.stock -= item.quantity
             store_item.save(update_fields=['stock'])
 
         payment = Payment.objects.create(
-            order=order,
-            amount=order.total_price,
-            fee=0,
-            status=Payment.PENDING
+            order=order, amount=order.total_price, fee=0, status=Payment.PENDING
         )
 
         cart.cartitem_cart.all().delete()
@@ -237,7 +265,7 @@ class OrderViewSet(viewsets.GenericViewSet):
         cart.save(update_fields=['total_discount'])
         cache.delete(f'cart:{request.user.id}')
         cache.delete(f'orders:{request.user.id}')
-        
+
         return Response(
             {
                 'message': 'Checkout successful. Proceed to payment.',
@@ -248,9 +276,8 @@ class OrderViewSet(viewsets.GenericViewSet):
                     'status': payment.status,
                 },
             },
-            status=status.HTTP_201_CREATED
+            status=status.HTTP_201_CREATED,
         )
-    
 
     @action(detail=False, methods=['get'])
     def my_orders(self, request):
@@ -260,16 +287,17 @@ class OrderViewSet(viewsets.GenericViewSet):
         cached_orders = cache.get(cache_key)
         if cached_orders:
             return Response(cached_orders)
-        
+
         queryset = self.get_queryset().filter(customer=request.user)
         serialized = self.get_serializer(queryset, many=True).data
 
         cache.set(cache_key, serialized, timeout=300)
 
         return Response(serialized)
-    
+
 
 TEST_MERCHANT_ID = '00000000-0000-0000-0000-000000000000'
+
 
 class PaymentViewSet(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -277,33 +305,50 @@ class PaymentViewSet(viewsets.GenericViewSet):
     @action(detail=True, methods=['post'])
     @transaction.atomic
     def start(self, request, pk=None):
-
-        payment = Payment.objects.select_for_update().filter(pk=pk, order__customer=request.user).first()
+        payment = (
+            Payment.objects.select_for_update()
+            .filter(pk=pk, order__customer=request.user)
+            .first()
+        )
         if not payment:
-            return Response({'detail': 'Payment not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {'detail': 'Payment not found.'}, status=status.HTTP_404_NOT_FOUND
+            )
 
         if payment.status == Payment.SUCCESS:
-            return Response({'detail': 'Payment already verified.'}, status=status.HTTP_409_CONFLICT)
+            return Response(
+                {'detail': 'Payment already verified.'}, status=status.HTTP_409_CONFLICT
+            )
 
         if payment.status == Payment.FAILED:
-            return Response({'detail': 'Payment failed previously. Cannot restart.'}, status=status.HTTP_409_CONFLICT)
+            return Response(
+                {'detail': 'Payment failed previously. Cannot restart.'},
+                status=status.HTTP_409_CONFLICT,
+            )
 
         if payment.reference_id:
-            return Response({
-                'detail': 'Payment already started. Use existing link.',
-                'payment_url': f'https://sandbox.zarinpal.com/pg/StartPay/{payment.reference_id}',
-                'authority': payment.reference_id,
-            }, status=status.HTTP_200_OK)
-
+            return Response(
+                {
+                    'detail': 'Payment already started. Use existing link.',
+                    'payment_url': f'https://sandbox.zarinpal.com/pg/StartPay/{payment.reference_id}',
+                    'authority': payment.reference_id,
+                },
+                status=status.HTTP_200_OK,
+            )
 
         amount = int(payment.amount)
         if amount < 1000:
-            return Response({'detail': 'Total price must be at least 1000 IRR to proceed.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'detail': 'Total price must be at least 1000 IRR to proceed.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         req_data = {
             'merchant_id': TEST_MERCHANT_ID,
             'amount': amount,
-            'callback_url': request.build_absolute_uri(f'/api/payments/{payment.pk}/verify/'),
+            'callback_url': request.build_absolute_uri(
+                f'/api/payments/{payment.pk}/verify/'
+            ),
             'description': f'Order #{payment.order.id}',
         }
 
@@ -312,41 +357,65 @@ class PaymentViewSet(viewsets.GenericViewSet):
             zarinpal_response = requests.post(zarinpal_url, json=req_data)
             response = zarinpal_response.json()
         except ValueError:
-            return Response({'detail': 'Zarinpal did not return valid JSON', 'raw': zarinpal_response.text}, status=status.HTTP_502_BAD_GATEWAY)
+            return Response(
+                {
+                    'detail': 'Zarinpal did not return valid JSON',
+                    'raw': zarinpal_response.text,
+                },
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
 
         if response.get('data') and response['data'].get('code') == 100:
             authority = response['data']['authority']
             payment.reference_id = authority
             payment.save(update_fields=['reference_id'])
-            return Response({
-                'payment_url': f'https://sandbox.zarinpal.com/pg/StartPay/{authority}',
-                'authority': authority,
-                'amount': amount,
-            })
+            return Response(
+                {
+                    'payment_url': f'https://sandbox.zarinpal.com/pg/StartPay/{authority}',
+                    'authority': authority,
+                    'amount': amount,
+                }
+            )
 
-        return Response({'detail': 'Payment request failed', 'zarinpal_response': response}, status=status.HTTP_400_BAD_REQUEST)
-
+        return Response(
+            {'detail': 'Payment request failed', 'zarinpal_response': response},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     @action(detail=True, methods=['get'])
     @transaction.atomic
     def verify(self, request, pk=None):
-        payment = Payment.objects.select_for_update().filter(pk=pk).select_related('order').first()
+        payment = (
+            Payment.objects.select_for_update()
+            .filter(pk=pk)
+            .select_related('order')
+            .first()
+        )
         if not payment:
-            return Response({'detail': 'Payment not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {'detail': 'Payment not found.'}, status=status.HTTP_404_NOT_FOUND
+            )
 
         if payment.status == Payment.SUCCESS:
-            return Response({'detail': 'Payment already verified.', 'ref_id': payment.reference_id}, status=status.HTTP_409_CONFLICT)
+            return Response(
+                {'detail': 'Payment already verified.', 'ref_id': payment.reference_id},
+                status=status.HTTP_409_CONFLICT,
+            )
 
         if not payment.reference_id:
-            return Response({'detail': 'Payment not started.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'detail': 'Payment not started.'}, status=status.HTTP_400_BAD_REQUEST
+            )
 
-        callback_status = request.query_params.get("Status")
-        if callback_status != "OK":
+        callback_status = request.query_params.get('Status')
+        if callback_status != 'OK':
             payment.status = Payment.FAILED
             payment.save(update_fields=['status'])
-            return Response({'detail': 'Payment was cancelled by user or gateway.'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response(
+                {'detail': 'Payment was cancelled by user or gateway.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         verify_data = {
             'merchant_id': TEST_MERCHANT_ID,
             'amount': int(payment.amount),
@@ -358,7 +427,13 @@ class PaymentViewSet(viewsets.GenericViewSet):
             verify_response = requests.post(verify_url, json=verify_data)
             response = verify_response.json()
         except ValueError:
-            return Response({'detail': 'Zarinpal did not return valid JSON', 'raw': verify_response.text}, status=status.HTTP_502_BAD_GATEWAY)
+            return Response(
+                {
+                    'detail': 'Zarinpal did not return valid JSON',
+                    'raw': verify_response.text,
+                },
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
 
         if response.get('data') and response['data'].get('code') == 100:
             payment.status = Payment.SUCCESS
@@ -368,11 +443,19 @@ class PaymentViewSet(viewsets.GenericViewSet):
             order = payment.order
             order.status = Order.PROCESSING
             order.save(update_fields=['status'])
-            
+
             payment_verified.send(sender=self.__class__, payment=payment)
-            
-            return Response({'detail': 'Payment verified successfully', 'ref_id': payment.transaction_id})
+
+            return Response(
+                {
+                    'detail': 'Payment verified successfully',
+                    'ref_id': payment.transaction_id,
+                }
+            )
 
         payment.status = Payment.FAILED
         payment.save(update_fields=['status'])
-        return Response({'detail': 'Payment verification failed', 'zarinpal_response': response}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {'detail': 'Payment verification failed', 'zarinpal_response': response},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
