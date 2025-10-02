@@ -1,4 +1,5 @@
 from django.forms.models import model_to_dict
+from drf_spectacular.utils import OpenApiExample, extend_schema_serializer
 from rest_framework import serializers
 
 from accounts.models import Address
@@ -8,12 +9,42 @@ from stores.models import StoreItem
 from .models import Cart, CartItem, Order, OrderItem
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            'Product Image Example',
+            summary='Image object for a product',
+            value={'id': 1, 'image': 'http://example.com/media/products/product1.jpg'},
+        )
+    ]
+)
 class ImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
         fields = ['id', 'image']
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            'Cart Item Example',
+            summary="An item inside the user's cart",
+            value={
+                'id': 5,
+                'store_item_id': 10,
+                'product_id': 2,
+                'product_name': 'iPhone 15',
+                'product_price': '499.99',
+                'quantity': 2,
+                'product_category': 'Electronics',
+                'product_image': [
+                    {'id': 1, 'image': 'http://example.com/media/products/product1.jpg'}
+                ],
+                'total_price': '999.98',
+            },
+        )
+    ]
+)
 class CartItemSerializer(serializers.ModelSerializer):
     store_item_id = serializers.IntegerField(source='store_item.id', read_only=True)
     product_id = serializers.IntegerField(
@@ -46,6 +77,38 @@ class CartItemSerializer(serializers.ModelSerializer):
         read_only_fields = ['total_price', 'product_name', 'product_price']
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            'Cart Example',
+            summary="User's shopping cart",
+            value={
+                'id': 1,
+                'items': [
+                    {
+                        'id': 5,
+                        'store_item_id': 10,
+                        'product_id': 2,
+                        'product_name': 'iPhone 15',
+                        'product_price': '499.99',
+                        'quantity': 2,
+                        'product_category': 'Electronics',
+                        'product_image': [
+                            {
+                                'id': 1,
+                                'image': 'http://example.com/media/products/product1.jpg',
+                            }
+                        ],
+                        'total_price': '999.98',
+                    }
+                ],
+                'subtotal': '999.98',
+                'total_discount': '50.00',
+                'total_price': '949.98',
+            },
+        )
+    ]
+)
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(source='cartitem_cart', many=True, read_only=True)
     subtotal = serializers.SerializerMethodField()
@@ -65,6 +128,15 @@ class CartSerializer(serializers.ModelSerializer):
         return obj.total_price()
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            'Add to Cart Example',
+            summary='Request to add an item to the cart',
+            value={'store_item_id': 10, 'quantity': 2},
+        )
+    ]
+)
 class AddToCartSerializer(serializers.Serializer):
     store_item_id = serializers.IntegerField()
     quantity = serializers.IntegerField(min_value=1, default=1)
@@ -75,6 +147,15 @@ class AddToCartSerializer(serializers.Serializer):
         return value
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            'Update Cart Quantity Example',
+            summary='Update quantity of a cart item',
+            value={'cart_item_id': 5, 'quantity': 3},
+        )
+    ]
+)
 class UpdateCartQuantitySerializer(serializers.Serializer):
     cart_item_id = serializers.IntegerField()
     quantity = serializers.IntegerField(min_value=0)
@@ -85,12 +166,28 @@ class UpdateCartQuantitySerializer(serializers.Serializer):
         return value
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            'Apply Discount Example',
+            summary='Apply discount to the cart',
+            value={'discount_value': '50.00'},
+        )
+    ]
+)
 class ApplyCartDiscountSerializer(serializers.Serializer):
     discount_value = serializers.DecimalField(
         max_digits=12, decimal_places=2, min_value=0
     )
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            'Checkout Example', summary='Checkout request', value={'address_id': 3}
+        )
+    ]
+)
 class CheckoutSerializer(serializers.Serializer):
     address_id = serializers.IntegerField()
 
@@ -101,6 +198,22 @@ class CheckoutSerializer(serializers.Serializer):
         return value
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            'Order Item Example',
+            summary='An item in an order',
+            value={
+                'id': 1,
+                'store_item': 10,
+                'product_name': 'iPhone 15',
+                'price': '499.99',
+                'quantity': 2,
+                'total_price': '999.98',
+            },
+        )
+    ]
+)
 class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source='store_item.product.name')
 
@@ -116,6 +229,40 @@ class OrderItemSerializer(serializers.ModelSerializer):
         ]
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            'Order Example',
+            summary='User order',
+            value={
+                'id': 1,
+                'customer': 5,
+                'user_address': {
+                    'id': 3,
+                    'label': 'Home',
+                    'address_line_1': '123 Market Street',
+                    'city': 'Tehran',
+                    'state': 'Tehran',
+                    'country': 'Iran',
+                    'postal_code': '1234567890',
+                },
+                'status': 'pending',
+                'total_price': '949.98',
+                'total_discount': '50.00',
+                'order_items': [
+                    {
+                        'id': 1,
+                        'store_item': 10,
+                        'product_name': 'iPhone 15',
+                        'price': '499.99',
+                        'quantity': 2,
+                        'total_price': '999.98',
+                    }
+                ],
+            },
+        )
+    ]
+)
 class OrderSerializer(serializers.ModelSerializer):
     order_items = OrderItemSerializer(
         source='orderitem_order', many=True, read_only=True
