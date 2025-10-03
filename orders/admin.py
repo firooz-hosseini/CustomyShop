@@ -90,14 +90,21 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [OrderItemInline]
     actions = [make_processing, make_cancelled, make_pending]
 
+    # Show menu for sellers
+    def has_module_permission(self, request):
+        return (
+            is_superadmin(request.user)
+            or is_support(request.user)
+            or is_seller(request.user)
+        )
+
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if is_superadmin(request.user) or is_support(request.user):
             return qs
         if is_seller(request.user):
-            # Seller can only see orders containing their store items
             return qs.filter(
-                orderitem__store_item__store__seller=request.user
+                orderitem_order__store_item__store__seller=request.user
             ).distinct()
         return qs.none()
 
@@ -105,7 +112,7 @@ class OrderAdmin(admin.ModelAdmin):
         if is_superadmin(request.user) or is_support(request.user):
             return True
         if is_seller(request.user) and obj:
-            return obj.orderitem_set.filter(
+            return obj.orderitem_order.filter(
                 store_item__store__seller=request.user
             ).exists()
         return False
@@ -178,13 +185,20 @@ class PaymentAdmin(admin.ModelAdmin):
     )
     actions = [mark_payments_success, mark_payments_failed, mark_payments_pending]
 
+    def has_module_permission(self, request):
+        return (
+            is_superadmin(request.user)
+            or is_support(request.user)
+            or is_seller(request.user)
+        )
+
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if is_superadmin(request.user) or is_support(request.user):
             return qs
         if is_seller(request.user):
             return qs.filter(
-                order__orderitem__store_item__store__seller=request.user
+                order__orderitem_order__store_item__store__seller=request.user
             ).distinct()
         return qs.none()
 
@@ -192,7 +206,7 @@ class PaymentAdmin(admin.ModelAdmin):
         if is_superadmin(request.user) or is_support(request.user):
             return True
         if is_seller(request.user) and obj:
-            return obj.order.orderitem_set.filter(
+            return obj.order.orderitem_order.filter(
                 store_item__store__seller=request.user
             ).exists()
         return False

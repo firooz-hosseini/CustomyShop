@@ -28,27 +28,33 @@ class StoreAdmin(admin.ModelAdmin):
     )
     inlines = [StoreItemInline]
 
+    def has_module_permission(self, request):
+        return (
+            is_superadmin(request.user)
+            or is_support(request.user)
+            or is_seller(request.user)
+        )
+
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        if is_superadmin(request.user):
+        if is_superadmin(request.user) or is_support(request.user):
             return qs
         if is_seller(request.user):
             return qs.filter(seller=request.user)
-        return qs.none()  # SupportStaff and Customer cannot access Stores
+        return qs.none()
 
     def has_change_permission(self, request, obj=None):
-        if is_superadmin(request.user):
+        if is_superadmin(request.user) or is_support(request.user):
             return True
-        if is_seller(request.user) and obj:
-            return obj.seller == request.user
-        return False
 
     def has_delete_permission(self, request, obj=None):
         return self.has_change_permission(request, obj)
 
     def has_add_permission(self, request):
-        return is_superadmin(request.user) or is_seller(request.user)
-
+        return (
+            is_superadmin(request.user)
+            or is_support(request.user)
+        )
 
 @admin.action(description='Enable selected store items')
 def enable_store_items(modeladmin, request, queryset):
