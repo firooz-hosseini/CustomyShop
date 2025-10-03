@@ -1,4 +1,7 @@
 from django.contrib import admin
+
+from accounts.admin_utils import is_seller, is_superadmin, is_support
+
 from .models import Cart, CartItem, Order, OrderItem, Payment
 
 
@@ -13,9 +16,15 @@ class CartItemInline(admin.TabularInline):
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'total_price', 'total_discount')
-    search_fields = ('id', 'user__email',)
+    search_fields = (
+        'id',
+        'user__email',
+    )
     readonly_fields = ('total_price',)
-    ordering = ('-id', '-created_at',)
+    ordering = (
+        '-id',
+        '-created_at',
+    )
     inlines = [CartItemInline]
 
 
@@ -23,7 +32,10 @@ class CartAdmin(admin.ModelAdmin):
 class CartItemAdmin(admin.ModelAdmin):
     list_display = ('id', 'cart', 'store_item', 'quantity', 'total_price')
     search_fields = ('id', 'cart__user__email', 'store_item__product__name')
-    ordering = ('-id', '-created_at',)
+    ordering = (
+        '-id',
+        '-created_at',
+    )
 
 
 class OrderItemInline(admin.TabularInline):
@@ -34,11 +46,12 @@ class OrderItemInline(admin.TabularInline):
     show_change_link = True
 
 
-@admin.action(description="Approve selected orders (Processing)")
+@admin.action(description='Approve selected orders (Processing)')
 def make_processing(modeladmin, request, queryset):
     queryset.update(status=Order.PROCESSING)
 
-@admin.action(description="Cancel selected orders")
+
+@admin.action(description='Cancel selected orders')
 def make_cancelled(modeladmin, request, queryset):
     for order in queryset:
         if order.status != Order.CANCELLED:
@@ -47,39 +60,79 @@ def make_cancelled(modeladmin, request, queryset):
             for item in order.orderitem_order.all():
                 item.store_item.stock += item.quantity
                 item.store_item.save()
-    modeladmin.message_user(request, "Selected orders have been cancelled and stock restored.")
+    modeladmin.message_user(
+        request, 'Selected orders have been cancelled and stock restored.'
+    )
 
-@admin.action(description="Mark selected orders as pending")
+
+@admin.action(description='Mark selected orders as pending')
 def make_pending(modeladmin, request, queryset):
     queryset.update(status=Order.PENDING)
 
-@admin.action(description="Mark selected orders as delivered")
+
+@admin.action(description='Mark selected orders as delivered')
 def make_delivered(modeladmin, request, queryset):
     queryset.update(status=Order.DELIVERED)
 
-    
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('id', 'customer', 'status', 'total_price', 'total_discount')
-    list_filter = ('id', 'status',)
+    list_filter = (
+        'id',
+        'status',
+    )
     search_fields = ('id', 'customer__email', 'address__street')
-    ordering = ('-id', '-created_at',)
+    ordering = (
+        '-id',
+        '-created_at',
+    )
     inlines = [OrderItemInline]
     actions = [make_processing, make_cancelled, make_pending]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if is_superadmin(request.user) or is_support(request.user):
+            return qs
+        if is_seller(request.user):
+            # Seller can only see orders containing their store items
+            return qs.filter(
+                orderitem__store_item__store__owner=request.user
+            ).distinct()
+        return qs.none()
+
+    def has_change_permission(self, request, obj=None):
+        if is_superadmin(request.user) or is_support(request.user):
+            return True
+        if is_seller(request.user) and obj:
+            return obj.orderitem_set.filter(
+                store_item__store__owner=request.user
+            ).exists()
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return self.has_change_permission(request, obj)
+
+    def has_add_permission(self, request):
+        return False  # Orders are created by users, not in admin
 
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
     list_display = ('id', 'order', 'store_item', 'quantity', 'price', 'total_price')
     search_fields = ('id', 'order__id', 'store_item__product__name')
-    ordering = ('-id', '-created_at',)
+    ordering = (
+        '-id',
+        '-created_at',
+    )
 
 
-@admin.action(description="Mark selected payments as Successful")
+@admin.action(description='Mark selected payments as Successful')
 def mark_payments_success(modeladmin, request, queryset):
     queryset.update(status=Payment.SUCCESS)
 
-@admin.action(description="Mark selected payments as Failed")
+
+@admin.action(description='Mark selected payments as Failed')
 def mark_payments_failed(modeladmin, request, queryset):
     for payment in queryset:
         payment.status = Payment.FAILED
@@ -93,18 +146,59 @@ def mark_payments_failed(modeladmin, request, queryset):
             for item in order.orderitem_order.all():
                 item.store_item.stock += item.quantity
                 item.store_item.save()
-    modeladmin.message_user(request, "Selected payments failed; orders cancelled and stock restored.")
+    modeladmin.message_user(
+        request, 'Selected payments failed; orders cancelled and stock restored.'
+    )
 
-@admin.action(description="Mark selected payments as Pending")
+
+@admin.action(description='Mark selected payments as Pending')
 def mark_payments_pending(modeladmin, request, queryset):
     queryset.update(status=Payment.PENDING)
 
+
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'order', 'status', 'amount', 'transaction_id', 'reference_id', 'card_pan')
-    list_filter = ('id', 'status',)
+    list_display = (
+        'id',
+        'order',
+        'status',
+        'amount',
+        'transaction_id',
+        'reference_id',
+        'card_pan',
+    )
+    list_filter = (
+        'id',
+        'status',
+    )
     search_fields = ('id', 'order__id', 'transaction_id', 'reference_id')
-    ordering = ('-id', '-created_at',)
+    ordering = (
+        '-id',
+        '-created_at',
+    )
     actions = [mark_payments_success, mark_payments_failed, mark_payments_pending]
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if is_superadmin(request.user) or is_support(request.user):
+            return qs
+        if is_seller(request.user):
+            return qs.filter(
+                order__orderitem__store_item__store__owner=request.user
+            ).distinct()
+        return qs.none()
 
+    def has_change_permission(self, request, obj=None):
+        if is_superadmin(request.user) or is_support(request.user):
+            return True
+        if is_seller(request.user) and obj:
+            return obj.order.orderitem_set.filter(
+                store_item__store__owner=request.user
+            ).exists()
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return self.has_change_permission(request, obj)
+
+    def has_add_permission(self, request):
+        return False
