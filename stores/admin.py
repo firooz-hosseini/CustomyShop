@@ -33,14 +33,14 @@ class StoreAdmin(admin.ModelAdmin):
         if is_superadmin(request.user):
             return qs
         if is_seller(request.user):
-            return qs.filter(owner=request.user)
+            return qs.filter(seller=request.user)
         return qs.none()  # SupportStaff and Customer cannot access Stores
 
     def has_change_permission(self, request, obj=None):
         if is_superadmin(request.user):
             return True
         if is_seller(request.user) and obj:
-            return obj.owner == request.user
+            return obj.seller == request.user
         return False
 
     def has_delete_permission(self, request, obj=None):
@@ -85,7 +85,7 @@ class StoreItemAdmin(admin.ModelAdmin):
         if is_superadmin(request.user):
             return qs
         if is_seller(request.user):
-            return qs.filter(store__owner=request.user)
+            return qs.filter(store__seller=request.user)
         if is_support(request.user):
             return qs.all()  # SupportStaff can view all store items
         return qs.none()
@@ -94,7 +94,7 @@ class StoreItemAdmin(admin.ModelAdmin):
         if is_superadmin(request.user):
             return True
         if is_seller(request.user) and obj:
-            return obj.store.owner == request.user
+            return obj.store.seller == request.user
         if is_support(request.user):
             return False
         return False

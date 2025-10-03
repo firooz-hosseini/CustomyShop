@@ -97,7 +97,7 @@ class OrderAdmin(admin.ModelAdmin):
         if is_seller(request.user):
             # Seller can only see orders containing their store items
             return qs.filter(
-                orderitem__store_item__store__owner=request.user
+                orderitem__store_item__store__seller=request.user
             ).distinct()
         return qs.none()
 
@@ -106,7 +106,7 @@ class OrderAdmin(admin.ModelAdmin):
             return True
         if is_seller(request.user) and obj:
             return obj.orderitem_set.filter(
-                store_item__store__owner=request.user
+                store_item__store__seller=request.user
             ).exists()
         return False
 
@@ -184,7 +184,7 @@ class PaymentAdmin(admin.ModelAdmin):
             return qs
         if is_seller(request.user):
             return qs.filter(
-                order__orderitem__store_item__store__owner=request.user
+                order__orderitem__store_item__store__seller=request.user
             ).distinct()
         return qs.none()
 
@@ -193,7 +193,7 @@ class PaymentAdmin(admin.ModelAdmin):
             return True
         if is_seller(request.user) and obj:
             return obj.order.orderitem_set.filter(
-                store_item__store__owner=request.user
+                store_item__store__seller=request.user
             ).exists()
         return False
 

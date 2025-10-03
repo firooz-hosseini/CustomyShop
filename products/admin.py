@@ -44,7 +44,7 @@ class ProductAdmin(admin.ModelAdmin):
             return qs
         if is_seller(request.user):
             # Sellers see only their products through StoreItem
-            return qs.filter(storeitem__store__owner=request.user).distinct()
+            return qs.filter(storeitem__store__seller=request.user).distinct()
         if is_support(request.user):
             return qs.none()  # SupportStaff cannot manage products
         return qs.none()
@@ -53,7 +53,7 @@ class ProductAdmin(admin.ModelAdmin):
         if is_superadmin(request.user):
             return True
         if is_seller(request.user) and obj:
-            return obj.storeitem_set.filter(store__owner=request.user).exists()
+            return obj.storeitem_set.filter(store__seller=request.user).exists()
         return False
 
     def has_delete_permission(self, request, obj=None):
