@@ -57,7 +57,7 @@ class SiteConfiguration(models.Model):
     site_header = models.CharField(max_length=200, default='CustomyShop Admin')
     site_title = models.CharField(max_length=200, default='CustomyShop Portal')
     index_title = models.CharField(max_length=200, default='Dashboard')
-    logo = models.ImageField(upload_to='branding/', blank=True, null=True)
+    logo = models.FileField(upload_to='branding/', blank=True, null=True)
     footer_text = models.TextField(default='All rights reserved © CustomyShop Online Store')
     instagram = models.URLField(blank=True, null=True)
     facebook = models.URLField(blank=True, null=True)
