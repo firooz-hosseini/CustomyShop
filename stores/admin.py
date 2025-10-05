@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils import timezone
 
-from accounts.admin_utils import is_seller, is_superadmin, is_support
+from accounts.admin_utils import is_seller, is_superadmin, is_admin
 
 from .models import SellerRequest, Store, StoreItem
 
@@ -28,33 +28,14 @@ class StoreAdmin(admin.ModelAdmin):
     )
     inlines = [StoreItemInline]
 
-    def has_module_permission(self, request):
-        return (
-            is_superadmin(request.user)
-            or is_support(request.user)
-            or is_seller(request.user)
-        )
-
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        if is_superadmin(request.user) or is_support(request.user):
+        if is_superadmin(request.user) or is_admin(request.user):
             return qs
         if is_seller(request.user):
             return qs.filter(seller=request.user)
         return qs.none()
 
-    def has_change_permission(self, request, obj=None):
-        if is_superadmin(request.user) or is_support(request.user):
-            return True
-
-    def has_delete_permission(self, request, obj=None):
-        return self.has_change_permission(request, obj)
-
-    def has_add_permission(self, request):
-        return (
-            is_superadmin(request.user)
-            or is_support(request.user)
-        )
 
 @admin.action(description='Enable selected store items')
 def enable_store_items(modeladmin, request, queryset):
@@ -92,8 +73,8 @@ class StoreItemAdmin(admin.ModelAdmin):
             return qs
         if is_seller(request.user):
             return qs.filter(store__seller=request.user)
-        if is_support(request.user):
-            return qs.all()  # SupportStaff can view all store items
+        if is_admin(request.user):
+            return qs.all()
         return qs.none()
 
     def has_change_permission(self, request, obj=None):
@@ -101,7 +82,7 @@ class StoreItemAdmin(admin.ModelAdmin):
             return True
         if is_seller(request.user) and obj:
             return obj.store.seller == request.user
-        if is_support(request.user):
+        if is_admin(request.user):
             return False
         return False
 

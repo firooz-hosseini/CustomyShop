@@ -59,23 +59,6 @@ class CustomUserAdmin(UserAdmin):
     )
     readonly_fields = ['last_login', 'date_joined']
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        # Only SuperAdmin can see all users
-        if is_superadmin(request.user):
-            return qs
-        # Others cannot access users
-        return qs.none()
-
-    def has_change_permission(self, request, obj=None):
-        return is_superadmin(request.user)
-
-    def has_delete_permission(self, request, obj=None):
-        return is_superadmin(request.user)
-
-    def has_add_permission(self, request):
-        return is_superadmin(request.user)
-
 
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):

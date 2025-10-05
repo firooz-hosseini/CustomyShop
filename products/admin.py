@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from accounts.admin_utils import is_seller, is_superadmin, is_support
+from accounts.admin_utils import is_seller, is_superadmin, is_admin
 
 from .models import Category, Comment, Product, ProductImage, Rating
 
@@ -40,14 +40,10 @@ class ProductAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        if is_superadmin(request.user):
+        if is_superadmin(request.user) or is_admin(request.user):
             return qs
         if is_seller(request.user):
-            # Sellers see only their products through StoreItem
             return qs.filter(storeitem__store__seller=request.user).distinct()
-        if is_support(request.user):
-            return qs.none()  # SupportStaff cannot manage products
-        return qs.none()
 
     def has_change_permission(self, request, obj=None):
         if is_superadmin(request.user):

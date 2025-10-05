@@ -3,11 +3,11 @@ from django.utils import timezone
 
 
 class BaseQuerySet(models.QuerySet):
-    def delete(self):
-        return super().update(is_deleted=True, deleted_at=timezone.now())
-
     def hard_delete(self):
         return super().delete()
+
+    def delete(self):
+        return super().update(is_deleted=True, deleted_at=timezone.now())
 
     def restore(self):
         return super().update(is_deleted=False, deleted_at=None)
@@ -39,6 +39,9 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
 
+    def hard_delete(self):
+        super().delete()
+
     def delete(self, using=None, keep_parents=False):
         self.is_deleted = True
         self.deleted_at = timezone.now()
@@ -49,16 +52,15 @@ class BaseModel(models.Model):
         self.deleted_at = None
         self.save(update_fields=['is_deleted', 'deleted_at'])
 
-    def hard_delete(self):
-        super().delete()
-
 
 class SiteConfiguration(models.Model):
     site_header = models.CharField(max_length=200, default='CustomyShop Admin')
     site_title = models.CharField(max_length=200, default='CustomyShop Portal')
     index_title = models.CharField(max_length=200, default='Dashboard')
     logo = models.FileField(upload_to='branding/', blank=True, null=True)
-    footer_text = models.TextField(default='All rights reserved © CustomyShop Online Store')
+    footer_text = models.TextField(
+        default='All rights reserved © CustomyShop Online Store'
+    )
     instagram = models.URLField(blank=True, null=True)
     facebook = models.URLField(blank=True, null=True)
     youtube = models.URLField(blank=True, null=True)
