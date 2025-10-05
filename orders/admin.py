@@ -88,7 +88,7 @@ class OrderAdmin(admin.ModelAdmin):
         '-created_at',
     )
     inlines = [OrderItemInline]
-    actions = [make_processing, make_cancelled, make_pending]
+    actions = [make_processing, make_cancelled, make_pending, make_delivered]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
