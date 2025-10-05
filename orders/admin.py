@@ -100,16 +100,6 @@ class OrderAdmin(admin.ModelAdmin):
             ).distinct()
         return qs.none()
 
-    def has_change_permission(self, request, obj=None):
-        if is_superadmin(request.user):
-            return True
-
-    def has_delete_permission(self, request, obj=None):
-        return self.has_change_permission(request, obj)
-
-    def has_add_permission(self, request):
-        return False 
-
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
@@ -172,7 +162,6 @@ class PaymentAdmin(admin.ModelAdmin):
     )
     actions = [mark_payments_success, mark_payments_failed, mark_payments_pending]
 
-
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if is_superadmin(request.user) or is_admin(request.user):
@@ -183,11 +172,3 @@ class PaymentAdmin(admin.ModelAdmin):
             ).distinct()
         return qs.none()
 
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-    def has_add_permission(self, request):
-        return False

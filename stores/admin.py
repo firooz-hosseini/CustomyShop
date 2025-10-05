@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils import timezone
 
-from accounts.admin_utils import is_seller, is_superadmin, is_admin
+from accounts.admin_utils import is_admin, is_seller, is_superadmin
 
 from .models import SellerRequest, Store, StoreItem
 
@@ -30,11 +30,25 @@ class StoreAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        if is_superadmin(request.user) or is_admin(request.user):
+        if is_superadmin(request.user):
             return qs
         if is_seller(request.user):
-            return qs.filter(seller=request.user)
+            return qs.filter(store__seller=request.user)
+        if is_admin(request.user):
+            return qs.all()
         return qs.none()
+
+    def has_change_permission(self, request, obj=None):
+        if is_superadmin(request.user):
+            return True
+        if is_seller(request.user) and obj:
+            return obj.store.seller == request.user
+        if is_admin(request.user):
+            return False
+        return False
+
+    def has_add_permission(self, request, obj=None):
+        return self.has_change_permission(request, obj)
 
 
 @admin.action(description='Enable selected store items')
@@ -80,8 +94,12 @@ class StoreItemAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         if is_superadmin(request.user):
             return True
-        if is_seller(request.user) and obj:
+
+        if is_seller(request.user):
+            if obj is None:
+                return True
             return obj.store.seller == request.user
+
         if is_admin(request.user):
             return False
         return False
@@ -90,7 +108,15 @@ class StoreItemAdmin(admin.ModelAdmin):
         return self.has_change_permission(request, obj)
 
     def has_add_permission(self, request):
-        return is_superadmin(request.user) or is_seller(request.user)
+        if is_superadmin(request.user):
+            return True
+
+        if is_seller(request.user):
+            return True
+
+        if is_admin(request.user):
+            return False
+        return False
 
 
 @admin.register(SellerRequest)

@@ -1,7 +1,5 @@
 from django.contrib import admin
 
-from accounts.admin_utils import is_seller, is_superadmin, is_admin
-
 from .models import Category, Comment, Product, ProductImage, Rating
 
 
@@ -37,26 +35,6 @@ class ProductAdmin(admin.ModelAdmin):
     )
     inlines = [ProductImageInline]
     actions = [enable_products, disable_products]
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if is_superadmin(request.user) or is_admin(request.user):
-            return qs
-        if is_seller(request.user):
-            return qs.filter(storeitem__store__seller=request.user).distinct()
-
-    def has_change_permission(self, request, obj=None):
-        if is_superadmin(request.user):
-            return True
-        if is_seller(request.user) and obj:
-            return obj.storeitem_set.filter(store__seller=request.user).exists()
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return self.has_change_permission(request, obj)
-
-    def has_add_permission(self, request):
-        return is_superadmin(request.user) or is_seller(request.user)
 
 
 @admin.register(Category)

@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .admin_utils import is_superadmin
 from .models import Address, CustomUser
 
 
