@@ -33,7 +33,7 @@ class StoreAdmin(admin.ModelAdmin):
         if is_superadmin(request.user):
             return qs
         if is_seller(request.user):
-            return qs.filter(store__seller=request.user)
+            return qs.filter(seller=request.user)
         if is_admin(request.user):
             return qs.all()
         return qs.none()
@@ -41,14 +41,28 @@ class StoreAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         if is_superadmin(request.user):
             return True
-        if is_seller(request.user) and obj:
-            return obj.store.seller == request.user
+        if is_seller(request.user):
+            if obj is None:
+                return True
+            return obj.seller == request.user
         if is_admin(request.user):
             return False
         return False
 
-    def has_add_permission(self, request, obj=None):
-        return self.has_change_permission(request, obj)
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        from accounts.models import CustomUser 
+
+        if db_field.name == 'seller':
+            if is_superadmin(request.user):
+                kwargs['queryset'] = CustomUser.objects.all()
+            elif is_seller(request.user):
+                kwargs['queryset'] = CustomUser.objects.filter(id=request.user.id)
+            elif is_admin(request.user):
+                kwargs['queryset'] = CustomUser.objects.all()
+            else:
+                kwargs['queryset'] = CustomUser.objects.none()
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 @admin.action(description='Enable selected store items')
@@ -117,6 +131,21 @@ class StoreItemAdmin(admin.ModelAdmin):
         if is_admin(request.user):
             return False
         return False
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        from stores.models import Store
+
+        if db_field.name == 'store':
+            if is_superadmin(request.user):
+                kwargs['queryset'] = Store.objects.all()
+            elif is_seller(request.user):
+                kwargs['queryset'] = Store.objects.filter(seller=request.user)
+            elif is_admin(request.user):
+                kwargs['queryset'] = Store.objects.all()
+            else:
+                kwargs['queryset'] = Store.objects.none()
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 @admin.register(SellerRequest)
