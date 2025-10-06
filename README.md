@@ -53,6 +53,13 @@ DB_PASSWORD=your_db_password
 DB_HOST=your_db_host
 DB_PORT=your_db_port
 
+EMAIL_BACKEND=your_email_backend 
+EMAIL_HOST=your_email_host
+EMAIL_PORT=your_email_port
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=your_email
+EMAIL_HOST_PASSWORD=your_email_password
+
 ACCESS_TOKEN_LIFETIME = minutes
 REFRESH_TOKEN_LIFETIME = days
 
@@ -60,6 +67,12 @@ CELERY_BROKER_URL = 'your_celery_broker_url'
 CELERY_RESULT_BACKEND = 'your_celery_result_backend'
 
 CACHE_LOCATION = 'your_cache_location'
+
+AWS_ACCESS_KEY_ID=your_access_key_id
+AWS_SECRET_ACCESS_KEY=your_secret_access_key
+AWS_STORAGE_BUCKET_NAME=your_storage_bucket_name
+AWS_S3_ENDPOINT_URL=your_endpoint_url
+AWS_S3_REGION_NAME=your_region_name
 ```
 
 ### 4- Apply Database Migrations
