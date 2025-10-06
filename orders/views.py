@@ -408,6 +408,84 @@ TEST_MERCHANT_ID = '00000000-0000-0000-0000-000000000000'
 class PaymentViewSet(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        tags=['Payments'],
+        summary='Start Payment',
+        description='Start the payment process for an order. Returns a payment URL and authority code if successful.',
+        responses={
+            200: OpenApiResponse(
+                response=PaymentStartSerializer,
+                description='Payment already started — existing link returned.',
+                examples=[
+                    OpenApiExample(
+                        'Payment already started',
+                        value={
+                            'detail': 'Payment already started. Use existing link.',
+                            'payment_url': 'https://sandbox.zarinpal.com/pg/StartPay/A000000000000000000000000000000000000',
+                            'authority': 'A000000000000000000000000000000000000',
+                            'amount': 120000,
+                        },
+                    )
+                ],
+            ),
+            201: OpenApiResponse(
+                response=PaymentStartSerializer,
+                description='New payment successfully initiated.',
+                examples=[
+                    OpenApiExample(
+                        'Successful start',
+                        value={
+                            'payment_url': 'https://sandbox.zarinpal.com/pg/StartPay/A111111111111111111111111111111111111',
+                            'authority': 'A111111111111111111111111111111111111',
+                            'amount': 150000,
+                        },
+                    )
+                ],
+            ),
+            400: OpenApiResponse(
+                response=PaymentStartSerializer,
+                description='Invalid payment data or amount too low.',
+                examples=[
+                    OpenApiExample(
+                        'Invalid amount',
+                        value={
+                            'detail': 'Total price must be at least 1000 IRR to proceed.'
+                        },
+                    )
+                ],
+            ),
+            404: OpenApiResponse(
+                response=PaymentStartSerializer,
+                description='Payment not found.',
+                examples=[
+                    OpenApiExample(
+                        'Not found',
+                        value={'detail': 'Payment not found.'},
+                    )
+                ],
+            ),
+            409: OpenApiResponse(
+                response=PaymentStartSerializer,
+                description='Payment already verified or failed previously.',
+                examples=[
+                    OpenApiExample(
+                        'Already verified',
+                        value={'detail': 'Payment already verified.'},
+                    )
+                ],
+            ),
+            502: OpenApiResponse(
+                response=PaymentStartSerializer,
+                description='Zarinpal did not return valid JSON or could not be reached.',
+                examples=[
+                    OpenApiExample(
+                        'Gateway error',
+                        value={'detail': 'Zarinpal did not return valid JSON'},
+                    )
+                ],
+            ),
+        },
+    )
     @action(detail=True, methods=['post'])
     @transaction.atomic
     def start(self, request, pk=None):
@@ -490,6 +568,80 @@ class PaymentViewSet(viewsets.GenericViewSet):
         )
         return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        tags=['Payments'],
+        summary='Verify Payment',
+        description='Verify the payment after the Zarinpal callback. Returns the transaction reference if successful.',
+        responses={
+            200: OpenApiResponse(
+                response=PaymentVerifySerializer,
+                description='Payment verified successfully.',
+                examples=[
+                    OpenApiExample(
+                        'Successful verification',
+                        value={
+                            'detail': 'Payment verified successfully',
+                            'ref_id': '123456789012345',
+                        },
+                    )
+                ],
+            ),
+            400: OpenApiResponse(
+                response=PaymentVerifySerializer,
+                description='Payment cancelled or failed.',
+                examples=[
+                    OpenApiExample(
+                        'Cancelled by user',
+                        value={'detail': 'Payment was cancelled by user or gateway.'},
+                    ),
+                    OpenApiExample(
+                        'Verification failed',
+                        value={
+                            'detail': 'Payment verification failed',
+                            'zarinpal_response': {
+                                'data': {'code': -21, 'message': 'Invalid authority'},
+                            },
+                        },
+                    ),
+                ],
+            ),
+            404: OpenApiResponse(
+                response=PaymentVerifySerializer,
+                description='Payment not found.',
+                examples=[
+                    OpenApiExample(
+                        'Not found',
+                        value={'detail': 'Payment not found.'},
+                    )
+                ],
+            ),
+            409: OpenApiResponse(
+                response=PaymentVerifySerializer,
+                description='Payment already verified.',
+                examples=[
+                    OpenApiExample(
+                        'Already verified',
+                        value={
+                            'detail': 'Payment already verified.',
+                            'ref_id': '123456789012345',
+                        },
+                    )
+                ],
+            ),
+            502: OpenApiResponse(
+                response=PaymentVerifySerializer,
+                description='Zarinpal response invalid or unreachable.',
+                examples=[
+                    OpenApiExample(
+                        'Gateway error',
+                        value={
+                            'detail': 'Failed to contact Zarinpal: Timeout',
+                        },
+                    )
+                ],
+            ),
+        },
+    )
     @action(detail=True, methods=['get'])
     @transaction.atomic
     def verify(self, request, pk=None):
