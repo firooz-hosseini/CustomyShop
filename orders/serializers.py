@@ -47,7 +47,6 @@ class CartItemSerializer(serializers.ModelSerializer):
         read_only_fields = ['total_price', 'product_name', 'product_price']
 
 
-
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
@@ -121,16 +120,6 @@ class ApplyCartDiscountSerializer(serializers.Serializer):
     )
 
 
-@extend_schema_serializer(
-    examples=[
-        OpenApiExample(
-            'Checkout Request Example',
-            summary='Checkout cart by providing address ID',
-            value={'address_id': 1},
-            request_only=True,
-        )
-    ]
-)
 class CheckoutSerializer(serializers.Serializer):
     address_id = serializers.IntegerField()
 
@@ -141,23 +130,6 @@ class CheckoutSerializer(serializers.Serializer):
         return value
 
 
-@extend_schema_serializer(
-    examples=[
-        OpenApiExample(
-            'OrderItem Response Example',
-            summary='Order item details',
-            value={
-                'id': 1,
-                'store_item': 1,
-                'product_name': 'Sample Product',
-                'price': '100.00',
-                'quantity': 2,
-                'total_price': '200.00',
-            },
-            response_only=True,
-        )
-    ]
-)
 class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source='store_item.product.name')
 
@@ -176,36 +148,47 @@ class OrderItemSerializer(serializers.ModelSerializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
+            'Checkout Request Example',
+            summary='Checkout cart by providing address ID',
+            value={'address_id': 1},
+            request_only=True,
+        ),
+        OpenApiExample(
             'Order Response Example',
             summary='Full order details',
             value={
-                'id': 1,
-                'customer': 10,
-                'user_address': {
-                    'id': 1,
-                    'label': 'Home',
-                    'address_line_1': '123 Main Street',
-                    'city': 'New York',
-                    'state': 'NY',
-                    'country': 'USA',
-                    'postal_code': '10001',
+                'order': {
+                    'id': 35,
+                    'customer': 4,
+                    'user_address': {
+                        'id': 3,
+                        'label': 'firooz',
+                        'address_line_1': 'Bandar Abbas',
+                        'address_line_2': 'null',
+                        'city': 'Bandar Abbas',
+                        'state': 'Hormozgan',
+                        'country': 'Iran',
+                        'postal_code': '9715421210',
+                        'is_default': 'false',
+                    },
+                    'status': 1,
+                    'total_price': '10000000.00',
+                    'total_discount': '0.00',
+                    'order_items': [
+                        {
+                            'id': 44,
+                            'store_item': 28,
+                            'product_name': 'Chocolate Shake',
+                            'price': '10000000.00',
+                            'quantity': 1,
+                            'total_price': 10000000.0,
+                        }
+                    ],
                 },
-                'status': 'PENDING',
-                'total_price': '180.00',
-                'total_discount': '20.00',
-                'order_items': [
-                    {
-                        'id': 1,
-                        'store_item': 1,
-                        'product_name': 'Sample Product',
-                        'price': '100.00',
-                        'quantity': 2,
-                        'total_price': '200.00',
-                    }
-                ],
+                'payment': {'id': 34, 'amount': 10000000.0, 'status': 0},
             },
             response_only=True,
-        )
+        ),
     ]
 )
 class OrderSerializer(serializers.ModelSerializer):
