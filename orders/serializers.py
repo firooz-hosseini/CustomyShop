@@ -215,3 +215,16 @@ class OrderSerializer(serializers.ModelSerializer):
                 obj.address, exclude=['user', 'store', 'is_deleted', 'deleted_at']
             )
         return None
+
+
+class PaymentStartSerializer(serializers.Serializer):
+    payment_url = serializers.URLField(read_only=True)
+    authority = serializers.CharField(read_only=True)
+    amount = serializers.IntegerField(read_only=True)
+    detail = serializers.CharField(read_only=True, required=False)
+
+
+class PaymentVerifySerializer(serializers.Serializer):
+    detail = serializers.CharField(read_only=True)
+    ref_id = serializers.CharField(read_only=True, required=False)
+    zarinpal_response = serializers.JSONField(read_only=True, required=False)

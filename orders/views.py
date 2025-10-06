@@ -1,7 +1,7 @@
 import requests
 from django.core.cache import cache
 from django.db import transaction
-from drf_spectacular.utils import OpenApiExample, extend_schema
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -16,6 +16,8 @@ from .serializers import (
     CartSerializer,
     CheckoutSerializer,
     OrderSerializer,
+    PaymentStartSerializer,
+    PaymentVerifySerializer,
     UpdateCartQuantitySerializer,
 )
 from .signals import payment_verified
@@ -420,32 +422,32 @@ class PaymentViewSet(viewsets.GenericViewSet):
             )
 
         if payment.status == Payment.SUCCESS:
-            return Response(
-                {'detail': 'Payment already verified.'}, status=status.HTTP_409_CONFLICT
-            )
+            serializer = PaymentStartSerializer({'detail': 'Payment already verified.'})
+            return Response(serializer.data, status=status.HTTP_409_CONFLICT)
 
         if payment.status == Payment.FAILED:
-            return Response(
-                {'detail': 'Payment failed previously. Cannot restart.'},
-                status=status.HTTP_409_CONFLICT,
+            serializer = PaymentStartSerializer(
+                {'detail': 'Payment failed previously. Cannot restart.'}
             )
+            return Response(serializer.data, status=status.HTTP_409_CONFLICT)
 
         if payment.reference_id:
-            return Response(
+            serializer = PaymentStartSerializer(
                 {
                     'detail': 'Payment already started. Use existing link.',
                     'payment_url': f'https://sandbox.zarinpal.com/pg/StartPay/{payment.reference_id}',
                     'authority': payment.reference_id,
-                },
-                status=status.HTTP_200_OK,
+                    'amount': int(payment.amount),
+                }
             )
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         amount = int(payment.amount)
         if amount < 1000:
-            return Response(
-                {'detail': 'Total price must be at least 1000 IRR to proceed.'},
-                status=status.HTTP_400_BAD_REQUEST,
+            serializer = PaymentStartSerializer(
+                {'detail': 'Total price must be at least 1000 IRR to proceed.'}
             )
+            return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
 
         req_data = {
             'merchant_id': TEST_MERCHANT_ID,
@@ -460,31 +462,33 @@ class PaymentViewSet(viewsets.GenericViewSet):
         try:
             zarinpal_response = requests.post(zarinpal_url, json=req_data)
             response = zarinpal_response.json()
-        except ValueError:
-            return Response(
-                {
-                    'detail': 'Zarinpal did not return valid JSON',
-                    'raw': zarinpal_response.text,
-                },
-                status=status.HTTP_502_BAD_GATEWAY,
+        except (ValueError, requests.exceptions.RequestException) as e:
+            serializer = PaymentStartSerializer(
+                {'detail': f'Failed to contact Zarinpal: {str(e)}'}
             )
+            return Response(serializer.data, status=status.HTTP_502_BAD_GATEWAY)
 
         if response.get('data') and response['data'].get('code') == 100:
             authority = response['data']['authority']
             payment.reference_id = authority
             payment.save(update_fields=['reference_id'])
-            return Response(
+
+            serializer = PaymentStartSerializer(
                 {
                     'payment_url': f'https://sandbox.zarinpal.com/pg/StartPay/{authority}',
                     'authority': authority,
                     'amount': amount,
                 }
             )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        return Response(
-            {'detail': 'Payment request failed', 'zarinpal_response': response},
-            status=status.HTTP_400_BAD_REQUEST,
+        serializer = PaymentStartSerializer(
+            {
+                'detail': 'Payment request failed',
+                'amount': amount,
+            }
         )
+        return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['get'])
     @transaction.atomic
@@ -496,29 +500,30 @@ class PaymentViewSet(viewsets.GenericViewSet):
             .first()
         )
         if not payment:
-            return Response(
-                {'detail': 'Payment not found.'}, status=status.HTTP_404_NOT_FOUND
-            )
+            serializer = PaymentVerifySerializer({'detail': 'Payment not found.'})
+            return Response(serializer.data, status=status.HTTP_404_NOT_FOUND)
 
         if payment.status == Payment.SUCCESS:
-            return Response(
-                {'detail': 'Payment already verified.', 'ref_id': payment.reference_id},
-                status=status.HTTP_409_CONFLICT,
+            serializer = PaymentVerifySerializer(
+                {
+                    'detail': 'Payment already verified.',
+                    'ref_id': payment.reference_id,
+                }
             )
+            return Response(serializer.data, status=status.HTTP_409_CONFLICT)
 
         if not payment.reference_id:
-            return Response(
-                {'detail': 'Payment not started.'}, status=status.HTTP_400_BAD_REQUEST
-            )
+            serializer = PaymentVerifySerializer({'detail': 'Payment not started.'})
+            return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
 
         callback_status = request.query_params.get('Status')
         if callback_status != 'OK':
             payment.status = Payment.FAILED
             payment.save(update_fields=['status'])
-            return Response(
-                {'detail': 'Payment was cancelled by user or gateway.'},
-                status=status.HTTP_400_BAD_REQUEST,
+            serializer = PaymentVerifySerializer(
+                {'detail': 'Payment was cancelled by user or gateway.'}
             )
+            return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
 
         verify_data = {
             'merchant_id': TEST_MERCHANT_ID,
@@ -530,14 +535,11 @@ class PaymentViewSet(viewsets.GenericViewSet):
         try:
             verify_response = requests.post(verify_url, json=verify_data)
             response = verify_response.json()
-        except ValueError:
-            return Response(
-                {
-                    'detail': 'Zarinpal did not return valid JSON',
-                    'raw': verify_response.text,
-                },
-                status=status.HTTP_502_BAD_GATEWAY,
+        except (ValueError, requests.exceptions.RequestException) as e:
+            serializer = PaymentVerifySerializer(
+                {'detail': f'Failed to contact Zarinpal: {str(e)}'}
             )
+            return Response(serializer.data, status=status.HTTP_502_BAD_GATEWAY)
 
         if response.get('data') and response['data'].get('code') == 100:
             payment.status = Payment.SUCCESS
@@ -545,21 +547,26 @@ class PaymentViewSet(viewsets.GenericViewSet):
             payment.save(update_fields=['status', 'transaction_id'])
 
             order = payment.order
-            order.status = Order.PROCESSING
-            order.save(update_fields=['status'])
+            if order.status not in [Order.CANCELLED, Order.DELIVERED]:
+                order.status = Order.PROCESSING
+                order.save(update_fields=['status'])
 
             payment_verified.send(sender=self.__class__, payment=payment)
 
-            return Response(
+            serializer = PaymentVerifySerializer(
                 {
                     'detail': 'Payment verified successfully',
                     'ref_id': payment.transaction_id,
                 }
             )
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         payment.status = Payment.FAILED
         payment.save(update_fields=['status'])
-        return Response(
-            {'detail': 'Payment verification failed', 'zarinpal_response': response},
-            status=status.HTTP_400_BAD_REQUEST,
+        serializer = PaymentVerifySerializer(
+            {
+                'detail': 'Payment verification failed',
+                'zarinpal_response': response,
+            }
         )
+        return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
