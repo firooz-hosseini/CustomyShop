@@ -149,6 +149,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['email', 'first_name', 'last_name', 'phone', 'image']
 
+        read_only_fields = ['email']
 
 @extend_schema_serializer(
     examples=[
