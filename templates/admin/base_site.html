@@ -1,33 +1,35 @@
 {% extends "admin/base.html" %}
 {% load static %}
 
+{% block branding %}
+<a href="{% url 'admin:index' %}" class="logo">
+    {% if site_config.logo %}
+        <img src="{{ site_config.logo.url }}" alt="Logo" style="height:40px;">
+    {% endif %}
+    {{ site_config.site_header }}
+</a>
+{% endblock %}
+
+{% block title %}{{ site_config.site_title }}{% endblock %}
+
 {% block extrastyle %}
 <link rel="stylesheet" type="text/css" href="{% static 'admin/css/custom.css' %}">
 {% endblock %}
 
-{% block branding %}
-<a href="{% url 'admin:index' %}" class="logo">
-    <img src="{% static 'admin/images/logo-type.svg' %}" alt="Logo" style="height:40px;">
-    CustomyShop Admin
-</a>
-{% endblock %}
-
 {% block footer %}
 <footer class="custom-footer">
-
-    <!-- Top section: Social + Newsletter -->
     <div class="footer-top">
         <div class="social">
             <p>Follow us on social media:</p>
             <div class="social-icons">
-                <a href="#">Instagram</a>
-                <a href="#">Facebook</a>
-                <a href="#">YouTube</a>
+                {% if site_config.instagram %}<a href="{{ site_config.instagram }}">Instagram</a>{% endif %}
+                {% if site_config.facebook %}<a href="{{ site_config.facebook }}">Facebook</a>{% endif %}
+                {% if site_config.youtube %}<a href="{{ site_config.youtube }}">YouTube</a>{% endif %}
             </div>
         </div>
 
         <div class="newsletter">
-            <p>Subscribe for latest news:</p>
+            <p>{{ site_config.email_subscription_text }}</p>
             <div class="newsletter-form">
                 <input type="email" placeholder="Your email">
                 <button>Subscribe</button>
@@ -35,7 +37,6 @@
         </div>
     </div>
 
-    <!-- Middle section: Columns -->
     <div class="footer-columns">
         <div class="footer-column">
             <h3>About CustomyShop</h3>
@@ -70,7 +71,7 @@
         <div class="footer-column">
             <h3>Contact</h3>
             <p>24/7 Customer Support</p>
-            <p>+98 917 411 6470</p>
+            <p>{{ site_config.contact_number }}</p>
             <div class="badges">
                 <img src="/badge1.png" alt="Badge">
                 <img src="/badge2.png" alt="Badge">
@@ -79,10 +80,8 @@
         </div>
     </div>
 
-    <!-- Bottom section -->
     <div class="footer-bottom">
-        All rights reserved © CustomyShop Online Store
+        {{ site_config.footer_text }}
     </div>
-
 </footer>
 {% endblock %}

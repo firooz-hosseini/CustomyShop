@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from accounts.admin_utils import is_seller, is_superadmin, is_support
+from accounts.admin_utils import is_seller, is_superadmin, is_admin
 
 from .models import Cart, CartItem, Order, OrderItem, Payment
 
@@ -88,40 +88,17 @@ class OrderAdmin(admin.ModelAdmin):
         '-created_at',
     )
     inlines = [OrderItemInline]
-    actions = [make_processing, make_cancelled, make_pending]
-
-    # Show menu for sellers
-    def has_module_permission(self, request):
-        return (
-            is_superadmin(request.user)
-            or is_support(request.user)
-            or is_seller(request.user)
-        )
+    actions = [make_processing, make_cancelled, make_pending, make_delivered]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        if is_superadmin(request.user) or is_support(request.user):
+        if is_superadmin(request.user) or is_admin(request.user):
             return qs
         if is_seller(request.user):
             return qs.filter(
                 orderitem_order__store_item__store__seller=request.user
             ).distinct()
         return qs.none()
-
-    def has_change_permission(self, request, obj=None):
-        if is_superadmin(request.user) or is_support(request.user):
-            return True
-        if is_seller(request.user) and obj:
-            return obj.orderitem_order.filter(
-                store_item__store__seller=request.user
-            ).exists()
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return self.has_change_permission(request, obj)
-
-    def has_add_permission(self, request):
-        return False  # Orders are created by users, not in admin
 
 
 @admin.register(OrderItem)
@@ -185,16 +162,9 @@ class PaymentAdmin(admin.ModelAdmin):
     )
     actions = [mark_payments_success, mark_payments_failed, mark_payments_pending]
 
-    def has_module_permission(self, request):
-        return (
-            is_superadmin(request.user)
-            or is_support(request.user)
-            or is_seller(request.user)
-        )
-
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        if is_superadmin(request.user) or is_support(request.user):
+        if is_superadmin(request.user) or is_admin(request.user):
             return qs
         if is_seller(request.user):
             return qs.filter(
@@ -202,17 +172,3 @@ class PaymentAdmin(admin.ModelAdmin):
             ).distinct()
         return qs.none()
 
-    def has_change_permission(self, request, obj=None):
-        if is_superadmin(request.user) or is_support(request.user):
-            return True
-        if is_seller(request.user) and obj:
-            return obj.order.orderitem_order.filter(
-                store_item__store__seller=request.user
-            ).exists()
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return self.has_change_permission(request, obj)
-
-    def has_add_permission(self, request):
-        return False
