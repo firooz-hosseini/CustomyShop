@@ -18,7 +18,8 @@ from .models import SellerRequest, Store, StoreItem
                 "status": "pending",
                 "created_at": "2025-10-02T12:00:00Z",
                 "reviewed_at": None
-            }
+            },
+            response_only=True,
         )
     ]
 )
@@ -32,7 +33,23 @@ class SellerRequestSerializer(serializers.ModelSerializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            "Store Address Example",
+            "Store Address Request Example",
+            summary="Address for a store",
+            value={
+                "label": "Main Warehouse",
+                "address_line_1": "123 Market Street",
+                "address_line_2": "Suite 4B",
+                "city": "Tehran",
+                "state": "Tehran",
+                "country": "Iran",
+                "postal_code": "1234567890",
+                "is_default": True,
+                "store": 2,
+            },
+            request_only=True,
+        ),
+        OpenApiExample(
+            "Store Address Response Example",
             summary="Address for a store",
             value={
                 "id": 1,
@@ -46,7 +63,8 @@ class SellerRequestSerializer(serializers.ModelSerializer):
                 "is_default": True,
                 "store": 2,
                 "store_name": "TechStore"
-            }
+            },
+            response_only=True,
         )
     ]
 )
@@ -74,6 +92,15 @@ class StoreAddressSerializer(serializers.ModelSerializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
+            'Create Store Request Example',
+            summary='Create or update Store',
+            value={
+                "name": "TechStore",
+                "description": "Electronics and gadgets store"
+            },
+            request_only=True,
+        ),
+        OpenApiExample(
             "Store Example",
             summary="Store object with addresses",
             value={
@@ -96,7 +123,9 @@ class StoreAddressSerializer(serializers.ModelSerializer):
                         "store_name": "TechStore"
                     }
                 ]
-            }
+                
+            },
+            response_only=True,
         )
     ]
 )
@@ -118,6 +147,20 @@ class StoreSerializer(serializers.ModelSerializer):
             "Store Item Example",
             summary="An item in the store",
             value={
+                "stock": 100,
+                "price": 499.99,
+                "discount_price": 449.99,
+                "is_active": True,
+                "product": 10,
+                "store": 2,
+            },
+            request_only=True,
+        ),
+
+        OpenApiExample(
+            "Store Item Example",
+            summary="An item in the store",
+            value={
                 "id": 5,
                 "stock": 100,
                 "price": 499.99,
@@ -127,7 +170,8 @@ class StoreSerializer(serializers.ModelSerializer):
                 "product_name": "iPhone 15",
                 "store": 2,
                 "store_name": "TechStore"
-            }
+            },
+            response_only=True,
         )
     ]
 )
