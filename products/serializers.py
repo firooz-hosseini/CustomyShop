@@ -57,15 +57,26 @@ class CategorySerializer(serializers.ModelSerializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Product Image Example',
+            'Product Image Request Example',
             summary='Product image object',
             description='Represents an image associated with a product.',
             value={
-                'id': 10,
+                'image': 'http://example.com/media/product/product1.jpg',
+                'product': 5,
+            },
+            request_only=True,
+        ),
+        OpenApiExample(
+            'Product Image Response Example',
+            summary='Product image object',
+            description='Represents an image associated with a product.',
+            value={
+                'id': 4,
                 'image': 'http://example.com/media/product/product1.jpg',
                 'product': 5,
                 'product_name': 'iPhone 15',
             },
+            response_only=True,
         )
     ]
 )
@@ -80,7 +91,19 @@ class ProductImageSerializer(serializers.ModelSerializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Product Example',
+            'Product Request Example',
+            summary='Product object with images',
+            description='Represents a product with optional images and category info.',
+            value={
+                'name': 'iPhone 15',
+                'description': 'Latest Apple smartphone',
+                'category': 1,
+                'is_active': True,
+            },
+            request_only=True,
+        ),
+        OpenApiExample(
+            'Product response Example',
             summary='Product object with images',
             description='Represents a product with optional images and category info.',
             value={
@@ -105,7 +128,8 @@ class ProductImageSerializer(serializers.ModelSerializer):
                 ],
                 'is_active': True,
             },
-        )
+            response_only=True,
+        ),
     ]
 )
 class ProductSerializer(serializers.ModelSerializer):
