@@ -80,7 +80,19 @@ class ProductImageSerializer(serializers.ModelSerializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
-            'Product Example',
+            'Product Request Example',
+            summary='Product object with images',
+            description='Represents a product with optional images and category info.',
+            value={
+                'name': 'iPhone 15',
+                'description': 'Latest Apple smartphone',
+                'category': 1,
+                'is_active': True,
+            },
+            request_only=True,
+        ),
+        OpenApiExample(
+            'Product response Example',
             summary='Product object with images',
             description='Represents a product with optional images and category info.',
             value={
@@ -105,7 +117,8 @@ class ProductImageSerializer(serializers.ModelSerializer):
                 ],
                 'is_active': True,
             },
-        )
+            response_only=True,
+        ),
     ]
 )
 class ProductSerializer(serializers.ModelSerializer):
