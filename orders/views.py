@@ -1,6 +1,7 @@
 import requests
 from django.core.cache import cache
 from django.db import transaction
+from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -58,6 +59,45 @@ class CartApiView(viewsets.GenericViewSet):
         serializer = CartItemSerializer(cart_item)
         return Response(serializer.data)
 
+    @extend_schema(
+        request=AddToCartSerializer,
+        responses={201: CartSerializer},
+        examples=[
+            OpenApiExample(
+                'Add to Cart - Request',
+                value={'store_item_id': 1, 'quantity': 2},
+                request_only=True,
+            ),
+            OpenApiExample(
+                'Add to Cart - Response',
+                value={
+                    'id': 1,
+                    'items': [
+                        {
+                            'id': 5,
+                            'store_item_id': 1,
+                            'product_id': 10,
+                            'product_name': 'Wireless Mouse',
+                            'product_price': '100.00',
+                            'quantity': 2,
+                            'product_category': 'Electronics',
+                            'product_image': [
+                                {
+                                    'id': 1,
+                                    'image': 'http://example.com/media/products/mouse.png',
+                                }
+                            ],
+                            'total_price': '200.00',
+                        }
+                    ],
+                    'subtotal': '200.00',
+                    'total_discount': '0.00',
+                    'total_price': '200.00',
+                },
+                response_only=True,
+            ),
+        ],
+    )
     @action(detail=False, methods=['post'])
     @transaction.atomic
     def add_to_cart(self, request):
