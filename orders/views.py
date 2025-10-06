@@ -238,6 +238,38 @@ class CartApiView(viewsets.GenericViewSet):
         cache.delete(f'cart:{request.user.id}')
         return Response({'message': 'Cart cleared.'}, status=status.HTTP_204_NO_CONTENT)
 
+    @extend_schema(
+        request=ApplyCartDiscountSerializer,
+        responses={200: CartSerializer},
+        examples=[
+            OpenApiExample(
+                'Apply Discount - Request',
+                value={'discount_value': '25.00'},
+                request_only=True,
+            ),
+            OpenApiExample(
+                'Apply Discount - Response',
+                value={
+                    'id': 1,
+                    'items': [
+                        {
+                            'id': 5,
+                            'store_item_id': 1,
+                            'product_id': 10,
+                            'product_name': 'Wireless Mouse',
+                            'product_price': '100.00',
+                            'quantity': 3,
+                            'total_price': '300.00',
+                        }
+                    ],
+                    'subtotal': '300.00',
+                    'total_discount': '25.00',
+                    'total_price': '275.00',
+                },
+                response_only=True,
+            ),
+        ],
+    )
     @action(detail=False, methods=['post'])
     def apply_discount(self, request):
         serializer = ApplyCartDiscountSerializer(data=request.data)
