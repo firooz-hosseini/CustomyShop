@@ -149,6 +149,38 @@ class CartApiView(viewsets.GenericViewSet):
         cache.delete(f'cart:{request.user.id}')
         return Response(CartSerializer(cart).data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(
+        request=UpdateCartQuantitySerializer,
+        responses={200: CartSerializer},
+        examples=[
+            OpenApiExample(
+                'Update Quantity - Request',
+                value={'cart_item_id': 5, 'quantity': 3},
+                request_only=True,
+            ),
+            OpenApiExample(
+                'Update Quantity - Response',
+                value={
+                    'id': 1,
+                    'items': [
+                        {
+                            'id': 5,
+                            'store_item_id': 1,
+                            'product_id': 10,
+                            'product_name': 'Wireless Mouse',
+                            'product_price': '100.00',
+                            'quantity': 3,
+                            'total_price': '300.00',
+                        }
+                    ],
+                    'subtotal': '300.00',
+                    'total_discount': '0.00',
+                    'total_price': '300.00',
+                },
+                response_only=True,
+            ),
+        ],
+    )
     @action(detail=False, methods=['patch'])
     @transaction.atomic
     def update_quantity(self, request):
