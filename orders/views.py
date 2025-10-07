@@ -411,9 +411,14 @@ class OrderViewSet(viewsets.GenericViewSet):
         queryset = self.filter_queryset(
             self.get_queryset().filter(customer=request.user)
         )
-        serialized = self.get_serializer(queryset, many=True).data
 
-        return Response(serialized)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 TEST_MERCHANT_ID = '00000000-0000-0000-0000-000000000000'
