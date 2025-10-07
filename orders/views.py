@@ -1,13 +1,15 @@
 import requests
 from django.core.cache import cache
 from django.db import transaction
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
-from rest_framework import permissions, status, viewsets
+from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from stores.models import StoreItem
 
+from .filters import OrderFilter
 from .models import Cart, CartItem, Order, OrderItem, Payment
 from .serializers import (
     AddToCartSerializer,
@@ -289,9 +291,28 @@ class OrderViewSet(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = OrderSerializer
 
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    ]
+    filterset_class = OrderFilter
+    search_fields = [
+        'orderitem_order__store_item__product__name',
+        'orderitem_order__store_item__store__name',
+    ]
+    ordering_fields = ['created_at', 'total_price', 'status']
+    ordering = ['-created_at']
+
     def get_queryset(self):
         return Order.objects.filter(customer=self.request.user).prefetch_related(
             'orderitem_order', 'payment_order'
+        )
+
+    def list(self, request, *args, **kwargs):
+        return Response(
+            {'detail': 'Use /orders/my_orders/ for listing orders.'},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
         )
 
     @action(detail=False, methods=['post'])
@@ -387,17 +408,10 @@ class OrderViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=['get'])
     def my_orders(self, request):
-        user_id = request.user.id
-        cache_key = f'orders:{user_id}'
-
-        cached_orders = cache.get(cache_key)
-        if cached_orders:
-            return Response(cached_orders)
-
-        queryset = self.get_queryset().filter(customer=request.user)
+        queryset = self.filter_queryset(
+            self.get_queryset().filter(customer=request.user)
+        )
         serialized = self.get_serializer(queryset, many=True).data
-
-        cache.set(cache_key, serialized, timeout=300)
 
         return Response(serialized)
 
