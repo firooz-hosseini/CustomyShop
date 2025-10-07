@@ -1,13 +1,21 @@
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny, SAFE_METHODS
-from .models import SellerRequest, Store, StoreItem
-from .serializers import SellerRequestSerializer, StoreSerializer, StoreItemSerializer, StoreAddressSerializer
-from accounts.models import Address
-from .permissions import IsOwnerOrAdmin
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, status, viewsets
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
+from rest_framework.response import Response
 
+from accounts.models import Address
+
+from .filters import StoreItemFilter
+from .models import SellerRequest, Store, StoreItem
+from .permissions import IsOwnerOrAdmin
+from .serializers import (
+    SellerRequestSerializer,
+    StoreAddressSerializer,
+    StoreItemSerializer,
+    StoreSerializer,
+)
 
 
 class SellerRequestViewSet(viewsets.GenericViewSet):
@@ -25,15 +33,22 @@ class SellerRequestViewSet(viewsets.GenericViewSet):
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
-        if SellerRequest.objects.filter(user=request.user).exclude(status='rejected').exists():
-            return Response({'detail': 'You already have a seller request (pending or approved).'}, status=status.HTTP_400_BAD_REQUEST)
+        if (
+            SellerRequest.objects.filter(user=request.user)
+            .exclude(status='rejected')
+            .exists()
+        ):
+            return Response(
+                {'detail': 'You already have a seller request (pending or approved).'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         seller_request = SellerRequest.objects.create(user=request.user)
         serializer = self.get_serializer(seller_request)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
-class StoreApiViewSet(viewsets.ModelViewSet):
 
+
+class StoreApiViewSet(viewsets.ModelViewSet):
     serializer_class = StoreSerializer
     permission_classes = [IsAuthenticated]
 
@@ -48,7 +63,9 @@ class StoreApiViewSet(viewsets.ModelViewSet):
         if user.role != 'seller':
             raise PermissionDenied('You are not a seller.')
 
-        if not SellerRequest.objects.filter(user=user, status=SellerRequest.APPROVED).exists():
+        if not SellerRequest.objects.filter(
+            user=user, status=SellerRequest.APPROVED
+        ).exists():
             raise PermissionDenied('Your seller request has not been approved yet.')
 
         if Store.objects.filter(seller=user).exists():
@@ -59,6 +76,16 @@ class StoreApiViewSet(viewsets.ModelViewSet):
 
 class StoreItemApiViewSet(viewsets.ModelViewSet):
     serializer_class = StoreItemSerializer
+    queryset = StoreItem.objects.all()
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    ]
+    filterset_class = StoreItemFilter
+    search_fields = ['product__name', 'product__description', 'store__name']
+    ordering_fields = ['price', 'created_at', 'updated_at']
+    ordering = ['-created_at']
 
     def get_queryset(self):
         user = self.request.user
@@ -75,7 +102,6 @@ class StoreItemApiViewSet(viewsets.ModelViewSet):
         else:
             permission_classes = [AllowAny]
         return [permission() for permission in permission_classes]
-        
 
     def perform_create(self, serializer):
         user = self.request.user
