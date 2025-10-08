@@ -1,45 +1,57 @@
-from celery import shared_task
-from django.core.mail import send_mail
-from .models import Payment, Cart
-from collections import defaultdict
 import os
 
+from celery import shared_task
+from django.core.mail import send_mail
+from django.db.models import Count, Q
+
+from .models import Cart, Order, Payment
+
 
 @shared_task
-def send_verify_payment_reminders():
-    pending_payments = Payment.objects.filter(status=Payment.PENDING).select_related('order', 'order__customer')
-    reminders = defaultdict(list)
-    for payment in pending_payments:
-        user = payment.order.customer
-        reminders[user].append(payment)
+def send_unpaid_order_reminders():
+    unpaid_orders = Order.objects.filter(
+        status=Order.PENDING,
+        payment_order__status=Payment.PENDING,
+    ).select_related('customer')
 
-    for user, payments in reminders.items():
-        payment_texts = [f"- Order #{p.order.id} ({p.amount} USD)" for p in payments]
-        send_mail(
-            subject="Reminder: Pending Payments",
-            message="You have pending payments:\n" + "\n".join(payment_texts),
-            from_email=os.getenv('EMAIL_HOST_USER', ''),
-            recipient_list=[user.email],
+    for order in unpaid_orders:
+        user = order.customer
+        subject = f'Reminder: Your order #{order.id} is still unpaid'
+        message = (
+            f'Dear {user.first_name or user.email},\n\n'
+            f"You placed order #{order.id} but haven't completed the payment yet.\n"
+            f'Total amount: {order.total_price} IRR.\n\n'
+            f'Please visit your account to complete the payment.\n\n'
+            'Thank you for shopping with us!'
         )
+        send_mail(subject, message, os.getenv('EMAIL_HOST_USER', ''), [user.email])
+
+    return f'Sent {unpaid_orders.count()} unpaid order reminders.'
 
 
 @shared_task
-def send_weekly_cart_reminders():
+def send_cart_reminders():
+    inactive_carts = (
+        Cart.objects.annotate(
+            item_count=Count('cartitem_cart', filter=Q(cartitem_cart__is_deleted=False))
+        )
+        .filter(item_count__gt=0)
+        .select_related('user')
+    )
 
-    carts_with_items = Cart.objects.filter(cartitem_cart__isnull=False).distinct().select_related('user')
-
-    for cart in carts_with_items:
+    for cart in inactive_carts:
         user = cart.user
-        email_body = (
-            "You have items in your cart that haven't been checked out yet. "
-            "Complete your order before they're sold out!"
+        subject = 'You still have items waiting in your cart '
+        message = (
+            f'Hi {user.first_name or user.email},\n\n'
+            'We noticed you added items to your cart but haven’t checked out yet.\n'
+            'Come back and complete your purchase before your favorite items run out!\n\n'
+            'Visit your cart now to finish your order.'
         )
-        send_mail(
-            subject="Reminder: Items in Your Cart",
-            message=email_body,
-            from_email=os.getenv('EMAIL_HOST_USER', ''),
-            recipient_list=[user.email],
-        )
+        send_mail(subject, message, os.getenv('EMAIL_HOST_USER', ''), [user.email])
+
+    return f'Sent {inactive_carts.count()} cart reminders.'
+
 
 @shared_task
 def send_payment_success_email_task(subject, message, recipient_list):
@@ -50,4 +62,3 @@ def send_payment_success_email_task(subject, message, recipient_list):
         recipient_list,
         fail_silently=False,
     )
-    

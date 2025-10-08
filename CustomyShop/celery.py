@@ -19,17 +19,15 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 
-
 app.conf.beat_schedule = {
-            'send_verify_payment_reminders': {
-        'task': 'orders.tasks.send_verify_payment_reminders',
-        'schedule': crontab(hour=9, minute=0), 
+    'send_unpaid_order_reminders': {
+        'task': 'orders.tasks.send_unpaid_order_reminders',
+        'schedule': crontab(hour=9, minute=0),
         # 'schedule': crontab(minute='*')
     },
-    
-    'weekly_cart_reminders': {
-        'task': 'orders.tasks.send_weekly_cart_reminders',
-        'schedule': crontab(hour=9, minute=0, day_of_week='mon'), 
-        # 'schedule': crontab(minute='*') 
+    'send_cart_reminders': {
+        'task': 'orders.tasks.send_cart_reminders',
+        'schedule': crontab(hour=9, minute=0, day_of_week='mon'),
+        # 'schedule': crontab(minute='*')
     },
 }
