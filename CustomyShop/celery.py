@@ -23,11 +23,11 @@ app.conf.beat_schedule = {
     'send_unpaid_order_reminders': {
         'task': 'orders.tasks.send_unpaid_order_reminders',
         'schedule': crontab(hour=9, minute=0),
-        # 'schedule': crontab(minute='*')
+        # 'schedule': crontab(minute='*') #For Test
     },
     'send_cart_reminders': {
         'task': 'orders.tasks.send_cart_reminders',
         'schedule': crontab(hour=9, minute=0, day_of_week='mon'),
-        # 'schedule': crontab(minute='*')
+        # 'schedule': crontab(minute='*') #For Test
     },
 }
