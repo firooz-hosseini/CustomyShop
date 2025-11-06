@@ -24,12 +24,12 @@
 - 🏬 **Store and product management** system  
 - 🛒 **Shopping cart** and **order checkout**  
 - 💳 **Online payment integration**  
-- Pagination, filtering, and search for API endpoints
-- Email integration for notifications (Gmail SMTP)
-- AWS S3 support for media files
+- 🧩 **Pagination, filtering, and search** for API endpoints
+- 📧 **Email** integration for notifications (Gmail SMTP)
+- ☁️ **AWS S3** support for media files
 - ⚙️ **Celery + Redis** for background tasks  
 - 📚 **Comprehensive API documentation**  
-- 🧩 **Custom Django Admin Panel** for intuitive management  
+- 🛠 **Custom Django Admin Panel** for intuitive management  
 - ✅ **Unit and integration tests**
 
 ---
@@ -157,6 +157,7 @@ python manage.py test
 docker-compose exec web python manage.py test
 ```
 
+---
 
 ## 👨‍💻 Contributing
 
@@ -174,7 +175,7 @@ To add a new feature or fix a bug:
 
 ## 🪪 License
 
-For educational use.
+This project is licensed under the [MIT License](LICENSE).
 
 ---
 
