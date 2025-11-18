@@ -130,6 +130,11 @@ Server will run at `http://127.0.0.1:8000`
 
 
 ### 🐳 Optional: Running with Docker
+
+### Environment Variables
+Create a `.env_docker` file in the root directory and set the required values exactly like previously mentioned .env file
+
+### Running Docker
 ```bash
 docker-compose up --build -d
 ```
