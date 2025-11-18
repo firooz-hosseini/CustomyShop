@@ -7,6 +7,8 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=CustomyShop.settings.docker
     env_file:
       - .env_docker
     depends_on:
@@ -25,12 +27,16 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
+    env_file:
+      - .env_docker
 
   redis:
     image: redis:7
     container_name: customyshop_redis
     ports:
-      - "6380:6379"
+      - "6378:6379"
+    env_file:
+      - .env_docker
 
   celery:
     build: .
